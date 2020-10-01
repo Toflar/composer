@@ -22,6 +22,7 @@ use Composer\DependencyResolver\Operation\InstallOperation;
 use Composer\DependencyResolver\Operation\UninstallOperation;
 use Composer\DependencyResolver\Operation\MarkAliasUninstalledOperation;
 use Composer\DependencyResolver\Operation\OperationInterface;
+use Composer\DependencyResolver\PoolOptimizer;
 use Composer\DependencyResolver\PolicyInterface;
 use Composer\DependencyResolver\Pool;
 use Composer\DependencyResolver\Request;
@@ -408,7 +409,8 @@ class Installer
             $request->setUpdateAllowList($this->updateAllowList, $this->updateAllowTransitiveDependencies);
         }
 
-        $pool = $repositorySet->createPool($request, $this->io, $this->eventDispatcher);
+        $poolOptimizer = new PoolOptimizer($policy);
+        $pool = $repositorySet->createPool($request, $this->io, $this->eventDispatcher, $poolOptimizer);
 
         // solve dependencies
         $solver = new Solver($policy, $pool, $this->io);
@@ -639,7 +641,8 @@ class Installer
                 $request->requireName($link->getTarget(), $link->getConstraint());
             }
 
-            $pool = $repositorySet->createPool($request, $this->io, $this->eventDispatcher);
+            $poolOptimizer = new PoolOptimizer($policy);
+            $pool = $repositorySet->createPool($request, $this->io, $this->eventDispatcher, $poolOptimizer);
 
             // solve dependencies
             $solver = new Solver($policy, $pool, $this->io);

@@ -56,6 +56,14 @@ class Pool implements \Countable
     }
 
     /**
+     * @return array<int, PackageInterface>
+     */
+    public function getPackages()
+    {
+        return $this->packages;
+    }
+
+    /**
      * Retrieves the package object for a given package id.
      *
      * @param  int              $id
@@ -188,6 +196,11 @@ class Pool implements \Countable
     public function isUnacceptableFixedPackage(PackageInterface $package)
     {
         return \in_array($package, $this->unacceptableFixedPackages, true);
+    }
+
+    public function getUnacceptableFixedPackages()
+    {
+        return $this->unacceptableFixedPackages;
     }
 
     public function __toString()
