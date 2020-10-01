@@ -68,7 +68,11 @@ class Pool implements \Countable
     }
 
     /**
+<<<<<<< HEAD
      * @return BasePackage[]
+=======
+     * @return array<int, PackageInterface>
+>>>>>>> Implemented PoolOptimizer
      */
     public function getPackages()
     {
@@ -219,6 +223,11 @@ class Pool implements \Countable
     public function isUnacceptableFixedOrLockedPackage(BasePackage $package)
     {
         return \in_array($package, $this->unacceptableFixedOrLockedPackages, true);
+    }
+
+    public function getUnacceptableFixedPackages()
+    {
+        return $this->unacceptableFixedPackages;
     }
 
     public function __toString()

@@ -20,6 +20,8 @@ use Composer\DependencyResolver\LockTransaction;
 use Composer\DependencyResolver\Operation\UpdateOperation;
 use Composer\DependencyResolver\Operation\InstallOperation;
 use Composer\DependencyResolver\Operation\UninstallOperation;
+use Composer\DependencyResolver\PoolOptimizer;
+use Composer\DependencyResolver\PolicyInterface;
 use Composer\DependencyResolver\Pool;
 use Composer\DependencyResolver\Request;
 use Composer\DependencyResolver\Solver;
@@ -424,7 +426,8 @@ class Installer
             $request->setUpdateAllowList($this->updateAllowList, $this->updateAllowTransitiveDependencies);
         }
 
-        $pool = $repositorySet->createPool($request, $this->io, $this->eventDispatcher);
+        $poolOptimizer = new PoolOptimizer($policy);
+        $pool = $repositorySet->createPool($request, $this->io, $this->eventDispatcher, $poolOptimizer);
 
         $this->io->writeError('<info>Updating dependencies</info>');
 
@@ -669,7 +672,8 @@ class Installer
                 $request->requireName($link->getTarget(), $link->getConstraint());
             }
 
-            $pool = $repositorySet->createPool($request, $this->io, $this->eventDispatcher);
+            $poolOptimizer = new PoolOptimizer($policy);
+            $pool = $repositorySet->createPool($request, $this->io, $this->eventDispatcher, $poolOptimizer);
 
             // solve dependencies
             $solver = new Solver($policy, $pool, $this->io);
