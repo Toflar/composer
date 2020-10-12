@@ -162,6 +162,7 @@ class Installer
     protected $writeLock;
     /** @var bool */
     protected $executeOperations = true;
+    protected $disablePoolOptimizer = false;
 
     /** @var bool */
     protected $updateMirrors = false;
@@ -426,8 +427,7 @@ class Installer
             $request->setUpdateAllowList($this->updateAllowList, $this->updateAllowTransitiveDependencies);
         }
 
-        $poolOptimizer = new PoolOptimizer($policy);
-        $pool = $repositorySet->createPool($request, $this->io, $this->eventDispatcher, $poolOptimizer);
+        $pool = $repositorySet->createPool($request, $this->io, $this->eventDispatcher, $this->createPoolOptimizer($policy));
 
         $this->io->writeError('<info>Updating dependencies</info>');
 
@@ -672,8 +672,7 @@ class Installer
                 $request->requireName($link->getTarget(), $link->getConstraint());
             }
 
-            $poolOptimizer = new PoolOptimizer($policy);
-            $pool = $repositorySet->createPool($request, $this->io, $this->eventDispatcher, $poolOptimizer);
+            $pool = $repositorySet->createPool($request, $this->io, $this->eventDispatcher, $this->createPoolOptimizer($policy));
 
             // solve dependencies
             $solver = new Solver($policy, $pool, $this->io);
@@ -995,6 +994,18 @@ class Installer
         $rm->setLocalRepository(
             new InstalledArrayRepository($packages)
         );
+    }
+
+    /**
+     * @return PoolOptimizer|null
+     */
+    private function createPoolOptimizer(PolicyInterface $policy)
+    {
+        if ($this->disablePoolOptimizer) {
+            return null;
+        }
+
+        return new PoolOptimizer($policy);
     }
 
     /**
@@ -1378,6 +1389,11 @@ class Installer
         $this->installationManager->disablePlugins();
 
         return $this;
+    }
+
+    public function disablePoolOptimizer()
+    {
+        $this->disablePoolOptimizer = true;
     }
 
     /**
