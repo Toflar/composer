@@ -181,6 +181,7 @@ php composer.phar update vendor/package:2.0.1 vendor/package2:3.0.*
 * **--no-scripts:** Skips execution of scripts defined in `composer.json`.
 * **--no-progress:** Removes the progress display that can mess with some
   terminals or scripts which don't handle backspace characters.
+* **--no-optimizer:** Disables the [pool optimizer](articles/troubleshooting.md#pool-optimizer).
 * **--with-dependencies (-w):** Update also dependencies of packages in the argument list, except those which are root requirements.
 * **--with-all-dependencies (-W):** Update also dependencies of packages in the argument list, including those which are root requirements.
 * **--optimize-autoloader (-o):** Convert PSR-0/4 autoloading to classmap to get a faster

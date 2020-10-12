@@ -54,6 +54,7 @@ class UpdateCommand extends BaseCommand
                 new InputOption('no-scripts', null, InputOption::VALUE_NONE, 'Skips the execution of all scripts defined in composer.json file.'),
                 new InputOption('no-suggest', null, InputOption::VALUE_NONE, 'DEPRECATED: This flag does not exist anymore.'),
                 new InputOption('no-progress', null, InputOption::VALUE_NONE, 'Do not output download progress.'),
+                new InputOption('no-optimizer', null, InputOption::VALUE_NONE, 'Disables the pool optimizer.'),
                 new InputOption('with-dependencies', 'w', InputOption::VALUE_NONE, 'Update also dependencies of packages in the argument list, except those which are root requirements.'),
                 new InputOption('with-all-dependencies', 'W', InputOption::VALUE_NONE, 'Update also dependencies of packages in the argument list, including those which are root requirements.'),
                 new InputOption('verbose', 'v|vv|vvv', InputOption::VALUE_NONE, 'Shows more details including new commits pulled in when updating packages.'),
@@ -223,6 +224,10 @@ EOT
 
         if ($input->getOption('no-plugins')) {
             $install->disablePlugins();
+        }
+
+        if ($input->getOption('no-optimizer')) {
+            $install->disablePoolOptimizer();
         }
 
         return $install->run();

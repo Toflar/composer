@@ -320,3 +320,28 @@ Composer can unpack zipballs using either a system-provided `unzip` utility or P
 native `ZipArchive` class. The `ZipArchive` class is preferred on Windows. On other
 OSes where ZIP files can contain permissions and symlinks, the `unzip` utility is
 preferred. You're advised to install it if you need these features.
+
+## Pool Optimizer
+
+In Composer, the `Pool` contains all the packages that are relevant for the dependency
+resolving process. Ultimately, that's what is used to generate all the rules which are then
+passed on to the dependency solver internally.
+In order to improve performance, Composer tries to optimize this `Pool` by removing useless
+package information early on.
+
+If all goes well, you should never notice any issues with it but in case you run into
+an unexpected result such as an unresolvable set of dependencies or conflicts where you
+think Composer is wrong, you might want to disable the optimizer by running
+
+```bash
+composer update --no-optimizer
+```
+
+and see, if the result is still the same. It will take significantly longer and use
+a lot more memory to run the dependency resolving process.
+
+If the result is different, you likely hit a problem in the Pool Optimizer.
+Please report this [issue](https://github.com/composer/composer/issues) so it can be fixed.
+
+
+
