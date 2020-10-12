@@ -1391,9 +1391,16 @@ class Installer
         return $this;
     }
 
+    /**
+     * Disables the pool optimizer.
+     *
+     * @return Installer
+     */
     public function disablePoolOptimizer()
     {
         $this->disablePoolOptimizer = true;
+
+        return $this;
     }
 
     /**
