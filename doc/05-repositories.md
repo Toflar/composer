@@ -316,23 +316,10 @@ Please note:
 
 #### BitBucket Driver Configuration
 
-The BitBucket driver uses OAuth to access your private repositories via the BitBucket REST APIs, and you will need to create an OAuth consumer to use the driver, please refer to [Atlassian's Documentation](https://confluence.atlassian.com/bitbucket/oauth-on-bitbucket-cloud-238027431.html). You will need to fill the callback url with something to satisfy BitBucket, but the address does not need to go anywhere and is not used by Composer.
+> **Note that the repository endpoint for BitBucket needs to be https rather than git.**
 
-After creating an OAuth consumer in the BitBucket control panel, you need to setup your auth.json file with
-the credentials like this (more info [here](https://getcomposer.org/doc/06-config.md#bitbucket-oauth)):
-```json
-{
-    "bitbucket-oauth": {
-        "bitbucket.org": {
-            "consumer-key": "myKey",
-            "consumer-secret": "mySecret"
-        }
-    }
-}
-```
-**Note that the repository endpoint needs to be https rather than git.**
-
-Alternatively if you prefer not to have your OAuth credentials on your filesystem you may export the ```bitbucket-oauth``` block above to the [COMPOSER_AUTH](https://getcomposer.org/doc/03-cli.md#composer-auth) environment variable instead.
+After setting up your bitbucket repository, you will also need to
+[set up authentication](articles/authentication-for-private-packages.md#bitbucket-oauth).
 
 #### Subversion Options
 
@@ -507,7 +494,7 @@ package repository definitions. It will fetch all the packages that are
 `require`d and dump a `packages.json` that is your `composer` repository.
 
 Check [the satis GitHub repository](https://github.com/composer/satis) and
-the [Satis article](articles/handling-private-packages-with-satis.md) for more
+the [handling private packages article](articles/handling-private-packages.md) for more
 information.
 
 ### Artifact
@@ -588,6 +575,17 @@ If the package is a local VCS repository, the version may be inferred by
 the branch or tag that is currently checked out. Otherwise, the version should
 be explicitly defined in the package's `composer.json` file. If the version
 cannot be resolved by these means, it is assumed to be `dev-master`.
+
+When the version cannot be inferred from the local VCS repository, you should use
+the special `branch-version` entry under `extra` instead of `version`:
+
+```json
+{
+    "extra": {
+        "branch-version": "4.2-dev"
+    }
+}
+```
 
 The local package will be symlinked if possible, in which case the output in
 the console will read `Symlinking from ../../packages/my-package`. If symlinking

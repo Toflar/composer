@@ -18,6 +18,7 @@ use Composer\Json\JsonFile;
 use Composer\Package\BasePackage;
 use Composer\Package\CompletePackageInterface;
 use Composer\Package\Link;
+use Composer\Package\AliasPackage;
 use Composer\Package\PackageInterface;
 use Composer\Package\Version\VersionParser;
 use Composer\Package\Version\VersionSelector;
@@ -195,8 +196,7 @@ EOT
             }
             $locker = $composer->getLocker();
             $lockedRepo = $locker->getLockedRepository(true);
-            $installedRepo = new InstalledRepository(array($lockedRepo));
-            $repos = new CompositeRepository(array_merge(array($installedRepo), $composer->getRepositoryManager()->getRepositories()));
+            $repos = $installedRepo = new InstalledRepository(array($lockedRepo));
         } else {
             // --installed / default case
             if (!$composer) {
@@ -348,7 +348,7 @@ EOT
         foreach ($repos as $repo) {
             if ($repo === $platformRepo) {
                 $type = 'platform';
-            } elseif($lockedRepo !== null && $repo === $lockedRepo) {
+            } elseif ($lockedRepo !== null && $repo === $lockedRepo) {
                 $type = 'locked';
             } elseif ($repo === $installedRepo || in_array($repo, $installedRepo->getRepositories(), true)) {
                 $type = 'installed';
@@ -365,6 +365,9 @@ EOT
                         || !is_object($packages[$type][$package->getName()])
                         || version_compare($packages[$type][$package->getName()]->getVersion(), $package->getVersion(), '<')
                     ) {
+                        while ($package instanceof AliasPackage) {
+                            $package = $package->getAliasOf();
+                        }
                         if (!$packageFilterRegex || preg_match($packageFilterRegex, $package->getName())) {
                             if (!$packageListFilter || in_array($package->getName(), $packageListFilter, true)) {
                                 $packages[$type][$package->getName()] = $package;
@@ -581,7 +584,7 @@ EOT
 
         $matchedPackage = null;
         $versions = array();
-        $pool = $repositorySet->createPoolForPackage($name);
+        $pool = $repositorySet->createPoolWithAllPackages();
         $matches = $pool->whatProvides($name, $constraint);
         foreach ($matches as $index => $package) {
             // select an exact match if it is in the installed repo and no specific version was required
@@ -1116,7 +1119,7 @@ EOT
         array $packagesInTree
     ) {
         $children = array();
-        list($package, $versions) = $this->getPackage(
+        list($package) = $this->getPackage(
             $installedRepo,
             $remoteRepos,
             $name,

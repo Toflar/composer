@@ -55,6 +55,7 @@ class RemoveCommand extends BaseCommand
                 new InputOption('optimize-autoloader', 'o', InputOption::VALUE_NONE, 'Optimize autoloader during autoloader dump'),
                 new InputOption('classmap-authoritative', 'a', InputOption::VALUE_NONE, 'Autoload classes from the classmap only. Implicitly enables `--optimize-autoloader`.'),
                 new InputOption('apcu-autoloader', null, InputOption::VALUE_NONE, 'Use APCu to cache found/not-found classes.'),
+                new InputOption('apcu-autoloader-prefix', null, InputOption::VALUE_REQUIRED, 'Use a custom prefix for the APCu autoloader cache. Implicitly enables --apcu-autoloader'),
             ))
             ->setHelp(
                 <<<EOT
@@ -158,7 +159,7 @@ EOT
             } elseif (isset($composer[$altType][$package])) {
                 $io->writeError('<warning>' . $composer[$altType][$package] . ' could not be found in ' . $type . ' but it is present in ' . $altType . '</warning>');
                 if ($io->isInteractive()) {
-                    if ($io->askConfirmation('Do you want to remove it from ' . $altType . ' [<comment>yes</comment>]? ', true)) {
+                    if ($io->askConfirmation('Do you want to remove it from ' . $altType . ' [<comment>yes</comment>]? ')) {
                         if ($dryRun) {
                             $toRemove[$altType][] = $composer[$altType][$package];
                         } else {
@@ -178,7 +179,7 @@ EOT
                 foreach ($matches as $matchedPackage) {
                     $io->writeError('<warning>' . $matchedPackage . ' could not be found in ' . $type . ' but it is present in ' . $altType . '</warning>');
                     if ($io->isInteractive()) {
-                        if ($io->askConfirmation('Do you want to remove it from ' . $altType . ' [<comment>yes</comment>]? ', true)) {
+                        if ($io->askConfirmation('Do you want to remove it from ' . $altType . ' [<comment>yes</comment>]? ')) {
                             if ($dryRun) {
                                 $toRemove[$altType][] = $matchedPackage;
                             } else {
@@ -208,9 +209,9 @@ EOT
                 'require' => $rootPackage->getRequires(),
                 'require-dev' => $rootPackage->getDevRequires(),
             );
-            foreach ($toRemove as $type => $packages) {
-                foreach ($packages as $package) {
-                    unset($links[$type][$package]);
+            foreach ($toRemove as $type => $names) {
+                foreach ($names as $name) {
+                    unset($links[$type][$name]);
                 }
             }
             $rootPackage->setRequires($links['require']);
@@ -227,7 +228,8 @@ EOT
         $updateDevMode = !$input->getOption('update-no-dev');
         $optimize = $input->getOption('optimize-autoloader') || $composer->getConfig()->get('optimize-autoloader');
         $authoritative = $input->getOption('classmap-authoritative') || $composer->getConfig()->get('classmap-authoritative');
-        $apcu = $input->getOption('apcu-autoloader') || $composer->getConfig()->get('apcu-autoloader');
+        $apcuPrefix = $input->getOption('apcu-autoloader-prefix');
+        $apcu = $apcuPrefix !== null || $input->getOption('apcu-autoloader') || $composer->getConfig()->get('apcu-autoloader');
 
         $updateAllowTransitiveDependencies = Request::UPDATE_LISTED_WITH_TRANSITIVE_DEPS_NO_ROOT_REQUIRE;
         $flags = '';
@@ -248,7 +250,7 @@ EOT
             ->setDevMode($updateDevMode)
             ->setOptimizeAutoloader($optimize)
             ->setClassMapAuthoritative($authoritative)
-            ->setApcuAutoloader($apcu)
+            ->setApcuAutoloader($apcu, $apcuPrefix)
             ->setUpdate(true)
             ->setInstall(!$input->getOption('no-install'))
             ->setUpdateAllowList($packages)
@@ -262,6 +264,15 @@ EOT
         if ($status !== 0) {
             $io->writeError("\n".'<error>Removal failed, reverting '.$file.' to its original content.</error>');
             file_put_contents($jsonFile->getPath(), $composerBackup);
+        }
+
+        if (!$dryRun) {
+            foreach ($packages as $package) {
+                if ($composer->getRepositoryManager()->getLocalRepository()->findPackages($package)) {
+                    $io->writeError('<error>Removal failed, '.$package.' is still present, it may be required by another package. See `composer why '.$package.'`.</error>');
+                    return 2;
+                }
+            }
         }
 
         return $status;

@@ -124,7 +124,7 @@ EOT
         if (function_exists('posix_getpwuid') && function_exists('posix_geteuid')) {
             $composeUser = posix_getpwuid(posix_geteuid());
             $homeOwner = posix_getpwuid(fileowner($home));
-            if (isset($composeUser['name']) && isset($homeOwner['name']) && $composeUser['name'] !== $homeOwner['name']) {
+            if (isset($composeUser['name'], $homeOwner['name']) && $composeUser['name'] !== $homeOwner['name']) {
                 $io->writeError('<warning>You are running composer as "'.$composeUser['name'].'", while "'.$home.'" is owned by "'.$homeOwner['name'].'"</warning>');
             }
         }
@@ -453,13 +453,11 @@ TAGSPUBKEY
 
     protected function getOldInstallationFinder($rollbackDir)
     {
-        $finder = Finder::create()
+        return Finder::create()
             ->depth(0)
             ->files()
             ->name('*' . self::OLD_INSTALL_EXT)
             ->in($rollbackDir);
-
-        return $finder;
     }
 
     /**
@@ -562,7 +560,7 @@ EOT;
             $io->writeError('<info>Operation succeeded.</info>');
         } else {
             $io->writeError('<error>Operation failed (file not written). '.$helpMessage.'</error>');
-        };
+        }
 
         return $result;
     }

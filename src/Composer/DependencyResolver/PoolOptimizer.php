@@ -161,7 +161,7 @@ class PoolOptimizer
             }
         }
 
-        $this->pool = new Pool($packages, $this->pool->getUnacceptableFixedPackages());
+        $this->pool = new Pool($packages, $this->pool->getUnacceptableFixedOrLockedPackages());
 
         // Reset package removals
         $this->packagesToRemove = array();

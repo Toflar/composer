@@ -79,7 +79,7 @@ class VersionGuesser
             return $this->postprocess($versionData);
         }
 
-        $versionData = $this->guessFossilVersion($packageConfig, $path);
+        $versionData = $this->guessFossilVersion($path);
         if (null !== $versionData && null !== $versionData['version']) {
             return $this->postprocess($versionData);
         }
@@ -303,7 +303,7 @@ class VersionGuesser
         return !preg_match('{^(' . $nonFeatureBranches . '|master|main|latest|next|current|support|tip|trunk|default|develop|\d+\..+)$}', $branchName, $match);
     }
 
-    private function guessFossilVersion(array $packageConfig, $path)
+    private function guessFossilVersion($path)
     {
         $version = null;
         $prettyVersion = null;

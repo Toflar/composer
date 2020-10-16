@@ -112,6 +112,8 @@ resolution.
 * **--classmap-authoritative (-a):** Autoload classes from the classmap only.
   Implicitly enables `--optimize-autoloader`.
 * **--apcu-autoloader:** Use APCu to cache found/not-found classes.
+* **--apcu-autoloader-prefix:** Use a custom prefix for the APCu autoloader cache.
+  Implicitly enables `--apcu-autoloader`.
 * **--ignore-platform-reqs:** ignore all platform requirements (`php`, `hhvm`,
   `lib-*` and `ext-*`) and force the installation even if the local machine does
   not fulfill these.
@@ -190,6 +192,8 @@ php composer.phar update vendor/package:2.0.1 vendor/package2:3.0.*
 * **--classmap-authoritative (-a):** Autoload classes from the classmap only.
   Implicitly enables `--optimize-autoloader`.
 * **--apcu-autoloader:** Use APCu to cache found/not-found classes.
+* **--apcu-autoloader-prefix:** Use a custom prefix for the APCu autoloader cache.
+  Implicitly enables `--apcu-autoloader`.
 * **--ignore-platform-reqs:** ignore all platform requirements (`php`, `hhvm`,
   `lib-*` and `ext-*`) and force the installation even if the local machine does
   not fulfill these.
@@ -257,6 +261,8 @@ If you do not specify a package, composer will prompt you to search for a packag
 * **--classmap-authoritative (-a):** Autoload classes from the classmap only.
   Implicitly enables `--optimize-autoloader`.
 * **--apcu-autoloader:** Use APCu to cache found/not-found classes.
+* **--apcu-autoloader-prefix:** Use a custom prefix for the APCu autoloader cache.
+  Implicitly enables `--apcu-autoloader`.
 
 ## remove
 
@@ -296,6 +302,8 @@ uninstalled.
 * **--classmap-authoritative (-a):** Autoload classes from the classmap only.
   Implicitly enables `--optimize-autoloader`.
 * **--apcu-autoloader:** Use APCu to cache found/not-found classes.
+* **--apcu-autoloader-prefix:** Use a custom prefix for the APCu autoloader cache.
+  Implicitly enables `--apcu-autoloader`.
 
 ## check-platform-reqs
 
@@ -775,6 +783,8 @@ performance.
 * **--classmap-authoritative (-a):** Autoload classes from the classmap only.
   Implicitly enables `--optimize`.
 * **--apcu:** Use APCu to cache found/not-found classes.
+* **--apcu-prefix:** Use a custom prefix for the APCu autoloader cache.
+  Implicitly enables `--apcu`.
 * **--no-dev:** Disables autoload-dev rules.
 * **--ignore-platform-reqs:** ignore all `php`, `hhvm`, `lib-*` and `ext-*`
   requirements and skip the [platform check](07-runtime.md#platform-check) for these.
@@ -891,9 +901,10 @@ If set to 1, this env allows running Composer when the Xdebug extension is enabl
 ### COMPOSER_AUTH
 
 The `COMPOSER_AUTH` var allows you to set up authentication as an environment variable.
-The contents of the variable should be a JSON formatted object containing http-basic,
-github-oauth, bitbucket-oauth, ... objects as needed, and following the
-[spec from the config](06-config.md#gitlab-oauth).
+The contents of the variable should be a JSON formatted object containing [http-basic,
+github-oauth, bitbucket-oauth, ... objects as needed](articles/authentication-for-private-packages.md),
+and following the
+[spec from the config](06-config.md).
 
 ### COMPOSER_BIN_DIR
 
@@ -1029,5 +1040,10 @@ to run Composer on a plane or a starship with poor connectivity.
 
 If set to `prime`, GitHub VCS repositories will prime the cache, so it can then be used
 fully offline with `1`.
+
+### COMPOSER_DEBUG_EVENTS
+
+If set to `1`, outputs information about events being dispatched, which can be
+useful for plugin authors to identify what is firing when exactly.
 
 &larr; [Libraries](02-libraries.md)  |  [Schema](04-schema.md) &rarr;

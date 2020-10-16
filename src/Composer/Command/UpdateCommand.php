@@ -61,6 +61,7 @@ class UpdateCommand extends BaseCommand
                 new InputOption('optimize-autoloader', 'o', InputOption::VALUE_NONE, 'Optimize autoloader during autoloader dump.'),
                 new InputOption('classmap-authoritative', 'a', InputOption::VALUE_NONE, 'Autoload classes from the classmap only. Implicitly enables `--optimize-autoloader`.'),
                 new InputOption('apcu-autoloader', null, InputOption::VALUE_NONE, 'Use APCu to cache found/not-found classes.'),
+                new InputOption('apcu-autoloader-prefix', null, InputOption::VALUE_REQUIRED, 'Use a custom prefix for the APCu autoloader cache. Implicitly enables --apcu-autoloader'),
                 new InputOption('ignore-platform-req', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Ignore a specific platform requirement (php & ext- packages).'),
                 new InputOption('ignore-platform-reqs', null, InputOption::VALUE_NONE, 'Ignore all platform requirements (php & ext- packages).'),
                 new InputOption('prefer-stable', null, InputOption::VALUE_NONE, 'Prefer stable versions of dependencies.'),
@@ -190,7 +191,8 @@ EOT
 
         $optimize = $input->getOption('optimize-autoloader') || $config->get('optimize-autoloader');
         $authoritative = $input->getOption('classmap-authoritative') || $config->get('classmap-authoritative');
-        $apcu = $input->getOption('apcu-autoloader') || $config->get('apcu-autoloader');
+        $apcuPrefix = $input->getOption('apcu-autoloader-prefix');
+        $apcu = $apcuPrefix !== null || $input->getOption('apcu-autoloader') || $config->get('apcu-autoloader');
 
         $updateAllowTransitiveDependencies = Request::UPDATE_ONLY_LISTED;
         if ($input->getOption('with-all-dependencies')) {
@@ -211,7 +213,7 @@ EOT
             ->setRunScripts(!$input->getOption('no-scripts'))
             ->setOptimizeAutoloader($optimize)
             ->setClassMapAuthoritative($authoritative)
-            ->setApcuAutoloader($apcu)
+            ->setApcuAutoloader($apcu, $apcuPrefix)
             ->setUpdate(true)
             ->setInstall(!$input->getOption('no-install'))
             ->setUpdateMirrors($updateMirrors)
@@ -289,7 +291,7 @@ EOT
         if ($io->askConfirmation(sprintf(
             'Would you like to continue and update the above package%s [<comment>yes</comment>]? ',
             1 === count($packages) ? '' : 's'
-        ), true)) {
+        ))) {
             return $packages;
         }
 
@@ -300,7 +302,7 @@ EOT
     {
         $parser = new VersionParser;
         $oldPrettyString = $link->getConstraint()->getPrettyString();
-        $newConstraint = MultiConstraint::create(array($link->getConstraint(), $parser->parseConstraints($constraint)), true);
+        $newConstraint = MultiConstraint::create(array($link->getConstraint(), $parser->parseConstraints($constraint)));
         $newConstraint->setPrettyString($oldPrettyString.', '.$constraint);
         return new Link(
             $link->getSource(),

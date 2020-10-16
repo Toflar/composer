@@ -61,8 +61,12 @@ class Transaction
     {
         $packageSort = function (PackageInterface $a, PackageInterface $b) {
             // sort alias packages by the same name behind their non alias version
-            if ($a->getName() == $b->getName() && $a instanceof AliasPackage != $b instanceof AliasPackage) {
-                return $a instanceof AliasPackage ? -1 : 1;
+            if ($a->getName() == $b->getName()) {
+                if ($a instanceof AliasPackage != $b instanceof AliasPackage) {
+                    return $a instanceof AliasPackage ? -1 : 1;
+                }
+                // if names are the same, compare version, e.g. to sort aliases reliably, actual order does not matter
+                return strcmp($b->getVersion(), $a->getVersion());
             }
             return strcmp($b->getName(), $a->getName());
         };
@@ -158,10 +162,10 @@ class Transaction
         }
 
         foreach ($removeMap as $name => $package) {
-            array_unshift($operations, new Operation\UninstallOperation($package, null));
+            array_unshift($operations, new Operation\UninstallOperation($package));
         }
         foreach ($removeAliasMap as $nameVersion => $package) {
-            $operations[] = new Operation\MarkAliasUninstalledOperation($package, null);
+            $operations[] = new Operation\MarkAliasUninstalledOperation($package);
         }
 
         $operations = $this->movePluginsToFront($operations);

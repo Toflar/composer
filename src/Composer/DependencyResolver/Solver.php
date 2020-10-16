@@ -215,7 +215,7 @@ class Solver
             throw new SolverProblemsException($this->problems, $this->learnedPool);
         }
 
-        return new LockTransaction($this->pool, $request->getPresentMap(), $request->getUnlockableMap(), $this->decisions);
+        return new LockTransaction($this->pool, $request->getPresentMap(), $request->getFixedPackagesMap(), $this->decisions);
     }
 
     /**
@@ -319,7 +319,8 @@ class Solver
                 throw new SolverBugException(
                     "Trying to revert to invalid level ".(int) $newLevel." from level ".(int) $level."."
                 );
-            } elseif (!$newRule) {
+            }
+            if (!$newRule) {
                 throw new SolverBugException(
                     "No rule was learned from analyzing $rule at level $level."
                 );
@@ -591,17 +592,6 @@ class Solver
         return 0;
     }
 
-    private function resetSolver()
-    {
-        $this->decisions->reset();
-
-        $this->propagateIndex = 0;
-        $this->branches = array();
-
-        $this->enableDisableLearnedRules();
-        $this->makeAssertionRuleDecisions();
-    }
-
     /**
      * enable/disable learnt rules
      *
@@ -644,9 +634,6 @@ class Solver
          * if we encounter a problem, we rewind to a safe level and restart
          * with step 1
          */
-
-        $decisionQueue = array();
-        $decisionSupplementQueue = array();
 
         $level = 1;
         $systemLevel = $level + 1;
