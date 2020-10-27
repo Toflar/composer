@@ -62,7 +62,7 @@ class PoolBuilder
      */
     private $eventDispatcher;
     /**
-     * @var PoolOptimizer
+     * @var PoolOptimizer|null
      */
     private $poolOptimizer;
     /**
