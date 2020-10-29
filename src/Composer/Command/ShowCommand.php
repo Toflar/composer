@@ -584,7 +584,11 @@ EOT
 
         $matchedPackage = null;
         $versions = array();
-        $pool = $repositorySet->createPoolWithAllPackages();
+        if (PlatformRepository::isPlatformPackage($name)) {
+            $pool = $repositorySet->createPoolWithAllPackages();
+        } else {
+            $pool = $repositorySet->createPoolForPackage($name);
+        }
         $matches = $pool->whatProvides($name, $constraint);
         foreach ($matches as $index => $package) {
             // select an exact match if it is in the installed repo and no specific version was required
@@ -1223,7 +1227,12 @@ EOT
             $targetVersion = '^' . $package->getVersion();
         }
 
-        return $versionSelector->findBestCandidate($name, $targetVersion, $bestStability);
+        $candidate = $versionSelector->findBestCandidate($name, $targetVersion, $bestStability);
+        while ($candidate instanceof AliasPackage) {
+            $candidate = $candidate->getAliasOf();
+        }
+
+        return $candidate;
     }
 
     private function getRepositorySet(Composer $composer)

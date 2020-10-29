@@ -5,7 +5,8 @@ This chapter will describe the `config` section of the `composer.json`
 
 ## process-timeout
 
-Defaults to `300`. The duration processes like git clones can run before
+The timeout in seconds for process executions, defaults to 300 (5mins).
+The duration processes like git clones can run before
 Composer assumes they died out. You may need to make this higher if you have a
 slow connection or huge vendors.
 
@@ -286,14 +287,12 @@ scripts if you tend to have modified vendors.
 
 ## archive-format
 
-Defaults to `tar`. Composer allows you to add a default archive format when the
-workflow needs to create a dedicated archiving format.
+Defaults to `tar`. Overrides the default format used by the archive command.
 
 ## archive-dir
 
-Defaults to `.`. Composer allows you to add a default archive directory when the
-workflow needs to create a dedicated archiving format. Or for easier development
-between modules.
+Defaults to `.`. Default destination for archives created by the archive
+command.
 
 Example:
 
