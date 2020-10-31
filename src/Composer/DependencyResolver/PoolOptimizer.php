@@ -174,6 +174,12 @@ class PoolOptimizer
 
         foreach ($this->pool->getPackages() as $i => $package) {
 
+            // If that package was already marked irremovable, we can skip
+            // the entire process for it
+            if (isset($this->irremovablePackages[$package->id])) {
+                continue;
+            }
+
             $packageIdsToRemove[$package->id] = true;
 
             $dependencyHash = $this->calculateDependencyHash($package);
