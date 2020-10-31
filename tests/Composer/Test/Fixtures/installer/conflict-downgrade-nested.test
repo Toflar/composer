@@ -34,6 +34,6 @@ update
 0
 
 --EXPECT--
-Installing conflicter/pkg (1.0.1)
 Installing victim/pkg (1.0.2)
+Installing conflicter/pkg (1.0.1)
 Installing nesty/nest (1.0.0)
