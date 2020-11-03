@@ -273,7 +273,7 @@ class PoolOptimizer
 
     private function markPackageForRemoval(PackageInterface $package)
     {
-        // We are now allowed to remove packages if they have been marked as irremovable
+        // We are not allowed to remove packages if they have been marked as irremovable
         if (isset($this->irremovablePackages[$package->id])) {
             return false;
         }
