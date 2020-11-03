@@ -86,13 +86,15 @@ class PoolOptimizer
 
     private function prepare()
     {
-        // Mark fixed and required packages from the request as irremovable
-        foreach ($this->request->getRequires() as $require => $constraint) {
-            $this->addIrremovablePackageConstraint($require, $constraint);
+        // Mark fixed or locked packages as irremovable
+        foreach ($this->request->getFixedOrLockedPackages() as $package) {
+            $this->addIrremovablePackageConstraint($package->getName(), new Constraint('==', $package->getVersion()));
         }
 
-        foreach ($this->request->getFixedPackages() as $package) {
-            $this->addIrremovablePackageConstraint($package->getName(), new Constraint('==', $package->getVersion()));
+        // Extract requested package requirements
+        foreach ($this->request->getRequires() as $require => $constraint) {
+            $constraint = Intervals::compactConstraint($constraint);
+            $this->requireConstraintsPerPackage[$require][(string) $constraint] = $constraint;
         }
 
         // First pass over all packages to extract information and mark package constraints irremovable
