@@ -115,23 +115,6 @@ class PoolOptimizer
                 $this->addIrremovablePackageConstraint($package->getName(), new Constraint('==', $package->getVersion()));
                 $this->addIrremovablePackageConstraint($package->getAliasOf()->getName(), new Constraint('==', $package->getAliasOf()->getVersion()));
             }
-
-            // This is the lazy approach. We simply do not remove any packages that are replaced or replace others here.
-            // (maybe this can be improved?)
-            if ($package->getReplaces()) {
-                $this->addIrremovablePackageConstraint($package->getName(), new Constraint('==', $package->getVersion()));
-
-                foreach ($package->getReplaces() as $link) {
-                    // Make sure we do not replace ourselves (if someone made a mistake and tagged it)
-                    // See e.g. https://github.com/BabDev/Pagerfanta/commit/fd00eb74632fecc0265327e9fe0eddc08c72b238#diff-b5d0ee8c97c7abd7e3fa29b9a27d1780
-                    // TODO: should that go into package itself?
-                    if ($package->getName() === $link->getTarget()) {
-                        continue;
-                    }
-
-                    $this->addIrremovablePackageConstraint($link->getTarget(), $link->getConstraint());
-                }
-            }
         }
 
         // Mark the packages as irremovable based on the constraints
@@ -205,6 +188,22 @@ class PoolOptimizer
 
                     if (CompilingMatcher::match($requireConstraint, Constraint::OP_EQ, $package->getVersion())) {
                         $groupHashParts[] = 'require:' . (string) $requireConstraint;
+                    }
+
+                    if ($package->getReplaces()) {
+                        foreach ($package->getReplaces() as $link) {
+                            // Make sure we do not replace ourselves (if someone made a mistake and tagged it)
+                            // See e.g. https://github.com/BabDev/Pagerfanta/commit/fd00eb74632fecc0265327e9fe0eddc08c72b238#diff-b5d0ee8c97c7abd7e3fa29b9a27d1780
+                            // TODO: should that go into package itself?
+                            if ($package->getName() === $link->getTarget()) {
+                                continue;
+                            }
+
+                            if (CompilingMatcher::match($link->getConstraint(), Constraint::OP_EQ, $package->getVersion())) {
+                                // Use the same hash part as the regular require hash because that's what the replacement does
+                                $groupHashParts[] = 'require:' . (string) $link->getConstraint();
+                            }
+                        }
                     }
 
                     if (isset($this->conflictConstraintsPerPackage[$packageName])) {
