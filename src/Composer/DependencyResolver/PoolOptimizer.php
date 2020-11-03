@@ -46,6 +46,7 @@ class PoolOptimizer
     private $irremovablePackageConstraints = array();
     private $irremovablePackages = array();
     private $requireConstraintsPerPackage = array();
+    private $conflictConstraintsPerPackage = array();
     private $packagesToRemove = array();
 
     public function __construct(PolicyInterface $policy)
@@ -77,6 +78,7 @@ class PoolOptimizer
         $this->irremovablePackageConstraints = array();
         $this->irremovablePackages = array();
         $this->requireConstraintsPerPackage = array();
+        $this->conflictConstraintsPerPackage = array();
         $this->packagesToRemove = array();
 
         return $this->pool;
@@ -98,7 +100,12 @@ class PoolOptimizer
             // Extract package requirements
             foreach ($package->getRequires() as $link) {
                 $constraint = Intervals::compactConstraint($link->getConstraint());
-                $this->requireConstraintsPerPackage[$link->getTarget()][(string)$constraint] = $constraint;
+                $this->requireConstraintsPerPackage[$link->getTarget()][(string) $constraint] = $constraint;
+            }
+            // Extract package conflicts
+            foreach ($package->getConflicts() as $link) {
+                $constraint = Intervals::compactConstraint($link->getConstraint());
+                $this->conflictConstraintsPerPackage[$link->getTarget()][(string) $constraint] = $constraint;
             }
 
             // Mark the alias package as well as the aliased package as irremovable (maybe this can be improved?)
@@ -190,10 +197,27 @@ class PoolOptimizer
                     continue;
                 }
 
-                foreach ($this->requireConstraintsPerPackage[$packageName] as $constraint) {
-                    if (CompilingMatcher::match($constraint, Constraint::OP_EQ, $package->getVersion())) {
-                        $identicalDefinitionPerPackage[$packageName][(string)$constraint][$dependencyHash][] = $package;
+                foreach ($this->requireConstraintsPerPackage[$packageName] as $requireConstraint) {
+
+                    $groupHashParts = array();
+
+                    if (CompilingMatcher::match($requireConstraint, Constraint::OP_EQ, $package->getVersion())) {
+                        $groupHashParts[] = 'require:' . (string) $requireConstraint;
                     }
+
+                    if (isset($this->conflictConstraintsPerPackage[$packageName])) {
+                        foreach ($this->conflictConstraintsPerPackage[$packageName] as $conflictConstraint) {
+                            if (CompilingMatcher::match($conflictConstraint, Constraint::OP_EQ, $package->getVersion())) {
+                                $groupHashParts[] = 'conflict:' . (string) $requireConstraint;
+                            }
+                        }
+                    }
+
+                    if (!$groupHashParts) {
+                        continue;
+                    }
+
+                    $identicalDefinitionPerPackage[$packageName][implode('', $groupHashParts)][$dependencyHash][] = $package;
                 }
             }
         }
