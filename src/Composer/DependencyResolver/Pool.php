@@ -68,11 +68,7 @@ class Pool implements \Countable
     }
 
     /**
-<<<<<<< HEAD
      * @return BasePackage[]
-=======
-     * @return array<int, PackageInterface>
->>>>>>> Implemented PoolOptimizer
      */
     public function getPackages()
     {

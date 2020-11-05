@@ -162,7 +162,6 @@ class Installer
     protected $writeLock;
     /** @var bool */
     protected $executeOperations = true;
-    protected $disablePoolOptimizer = false;
 
     /** @var bool */
     protected $updateMirrors = false;
@@ -1001,7 +1000,7 @@ class Installer
      */
     private function createPoolOptimizer(PolicyInterface $policy)
     {
-        if ($this->disablePoolOptimizer) {
+        if (!$this->config->get('pool-optimizer')) {
             return null;
         }
 
@@ -1387,18 +1386,6 @@ class Installer
     public function disablePlugins()
     {
         $this->installationManager->disablePlugins();
-
-        return $this;
-    }
-
-    /**
-     * Disables the pool optimizer.
-     *
-     * @return Installer
-     */
-    public function disablePoolOptimizer()
-    {
-        $this->disablePoolOptimizer = true;
 
         return $this;
     }
