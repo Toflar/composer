@@ -327,13 +327,24 @@ package information early on.
 
 If all goes well, you should never notice any issues with it but in case you run into
 an unexpected result such as an unresolvable set of dependencies or conflicts where you
-think Composer is wrong, you might want to disable the optimizer by running
+think Composer is wrong, you might want to disable the optimizer by adding the following
+section to your `composer.json`:
 
-```bash
-composer update --no-optimizer
+```json
+{
+    "config": {
+        "pool-optimizer": false
+    }
+}
 ```
 
-and see, if the result is still the same. It will take significantly longer and use
+Alternatively, you can also disable it using the environment variable `COMPOSER_POOL_OPTIMIZER=0`:
+
+```bash
+COMPOSER_POOL_OPTIMIZER=0 composer update
+```
+
+Now double check if the result is still the same. It will take significantly longer and use
 a lot more memory to run the dependency resolving process.
 
 If the result is different, you likely hit a problem in the Pool Optimizer.

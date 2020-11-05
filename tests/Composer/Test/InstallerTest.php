@@ -198,17 +198,25 @@ class InstallerTest extends TestCase
      */
     public function testIntegration($file, $message, $condition, $composerConfig, $lock, $installed, $run, $expectLock, $expectInstalled, $expectOutput, $expect, $expectResult)
     {
-        // Test both, with and without pool optimizer to ensure the same outcome
-        $this->doTestIntegration(true, $file, $message, $condition, $composerConfig, $lock, $installed, $run, $expectLock, $expectInstalled, $expectOutput, $expect, $expectResult);
-        $this->doTestIntegration(false, $file, $message, $condition, $composerConfig, $lock, $installed, $run, $expectLock, $expectInstalled, $expectOutput, $expect, $expectResult);
+        $this->doTestIntegration($file, $message, $condition, $composerConfig, $lock, $installed, $run, $expectLock, $expectInstalled, $expectOutput, $expect, $expectResult);
     }
 
-    private function doTestIntegration($withPoolOptimizer, $file, $message, $condition, $composerConfig, $lock, $installed, $run, $expectLock, $expectInstalled, $expectOutput, $expect, $expectResult)
+    /**
+     * @dataProvider getIntegrationTests
+     */
+    public function testIntegrationWithDisabledPoolOptimizer($file, $message, $condition, $composerConfig, $lock, $installed, $run, $expectLock, $expectInstalled, $expectOutput, $expect, $expectResult)
     {
-        if (!$withPoolOptimizer) {
-            $this->setName($this->getName() . ' [--no-optimizer]');
-        }
+        // Disable output comparison
+        $expectOutput = null;
 
+        // Disable pool optimizer
+        $composerConfig['config']['pool-optimizer'] = false;
+
+        $this->doTestIntegration($file, $message, $condition, $composerConfig, $lock, $installed, $run, $expectLock, $expectInstalled, $expectOutput, $expect, $expectResult);
+    }
+
+    private function doTestIntegration($file, $message, $condition, $composerConfig, $lock, $installed, $run, $expectLock, $expectInstalled, $expectOutput, $expect, $expectResult)
+    {
         if ($condition) {
             eval('$res = '.$condition.';');
             if (!$res) {
@@ -315,7 +323,7 @@ class InstallerTest extends TestCase
         $update->addOption('prefer-stable', null, InputOption::VALUE_NONE);
         $update->addOption('prefer-lowest', null, InputOption::VALUE_NONE);
         $update->addArgument('packages', InputArgument::IS_ARRAY | InputArgument::OPTIONAL);
-        $update->setCode(function ($input, $output) use ($installer, $withPoolOptimizer) {
+        $update->setCode(function ($input, $output) use ($installer) {
             $packages = $input->getArgument('packages');
             $filteredPackages = array_filter($packages, function ($package) {
                 return !in_array($package, array('lock', 'nothing', 'mirrors'), true);
@@ -343,10 +351,6 @@ class InstallerTest extends TestCase
                 ->setPreferStable($input->getOption('prefer-stable'))
                 ->setPreferLowest($input->getOption('prefer-lowest'))
                 ->setIgnorePlatformRequirements($ignorePlatformReqs);
-
-            if (!$withPoolOptimizer) {
-                $installer->disablePoolOptimizer();
-            }
 
             return $installer->run();
         });
@@ -395,9 +399,7 @@ class InstallerTest extends TestCase
         $installationManager = $composer->getInstallationManager();
         $this->assertSame(rtrim($expect), implode("\n", $installationManager->getTrace()));
 
-        // Only test the expected output if the pool optimizer was enabled.
-        // If it was not, we only compare the outcome (exit code, lock file etc.)
-        if ($expectOutput && $withPoolOptimizer) {
+        if ($expectOutput) {
             $output = preg_replace('{^    - .*?\.ini$}m', '__inilist__', $output);
             $output = preg_replace('{(__inilist__\r?\n)+}', "__inilist__\n", $output);
 
