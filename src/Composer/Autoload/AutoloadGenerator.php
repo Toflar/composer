@@ -192,6 +192,7 @@ return array(
 EOF;
 
         // Collect information from all packages.
+        $devPackageNames = $localRepo->getDevPackageNames();
         $packageMap = $this->buildPackageMap($installationManager, $mainPackage, $localRepo->getCanonicalPackages());
         $autoloads = $this->parseAutoloads($packageMap, $mainPackage, $this->devMode === false);
 
@@ -350,7 +351,7 @@ EOF;
         $checkPlatform = $config->get('platform-check') && $this->ignorePlatformReqs !== true;
         $platformCheckContent = null;
         if ($checkPlatform) {
-            $platformCheckContent = $this->getPlatformCheck($packageMap, $this->ignorePlatformReqs ?: array());
+            $platformCheckContent = $this->getPlatformCheck($packageMap, $this->ignorePlatformReqs ?: array(), $config->get('platform-check'), $devPackageNames);
             if (null === $platformCheckContent) {
                 $checkPlatform = false;
             }
@@ -609,7 +610,7 @@ EOF;
         return $baseDir . (($path !== false) ? var_export($path, true) : "");
     }
 
-    protected function getPlatformCheck($packageMap, array $ignorePlatformReqs)
+    protected function getPlatformCheck(array $packageMap, array $ignorePlatformReqs, $checkPlatform, array $devPackageNames)
     {
         $lowestPhpVersion = Bound::zero();
         $requiredExtensions = array();
@@ -626,6 +627,11 @@ EOF;
 
         foreach ($packageMap as $item) {
             $package = $item[0];
+            // skip dev dependencies platform requirements as platform-check really should only be a production safeguard
+            if (in_array($package->getName(), $devPackageNames, true)) {
+                continue;
+            }
+
             foreach ($package->getRequires() as $link) {
                 if (in_array($link->getTarget(), $ignorePlatformReqs, true)) {
                     continue;
@@ -637,7 +643,7 @@ EOF;
                     }
                 }
 
-                if (preg_match('{^ext-(.+)$}iD', $link->getTarget(), $match)) {
+                if ($checkPlatform === true && preg_match('{^ext-(.+)$}iD', $link->getTarget(), $match)) {
                     // skip extension checks if they have a valid provider/replacer
                     if (isset($extensionProviders[$match[1]])) {
                         foreach ($extensionProviders[$match[1]] as $provided) {
@@ -704,7 +710,7 @@ EOF;
             $requiredPhp = <<<PHP_CHECK
 
 if (!($requiredPhp)) {
-    \$issues[] = 'Your Composer dependencies require a PHP version $requiredPhpError. You are running ' . PHP_VERSION  .  '.';
+    \$issues[] = 'Your Composer dependencies require a PHP version $requiredPhpError. You are running ' . PHP_VERSION . '.';
 }
 
 PHP_CHECK;
@@ -717,7 +723,7 @@ PHP_CHECK;
 \$missingExtensions = array();
 $requiredExtensions
 if (\$missingExtensions) {
-    \$issues[] = 'Your Composer dependencies require the following PHP extensions to be installed: ' . implode(', ', \$missingExtensions);
+    \$issues[] = 'Your Composer dependencies require the following PHP extensions to be installed: ' . implode(', ', \$missingExtensions) . '.';
 }
 
 EXT_CHECKS;
@@ -735,8 +741,20 @@ EXT_CHECKS;
 \$issues = array();
 ${requiredPhp}${requiredExtensions}
 if (\$issues) {
-    echo 'Composer detected issues in your platform:' . "\\n\\n" . implode("\\n", \$issues);
-    exit(104);
+    if (!headers_sent()) {
+        header('HTTP/1.1 500 Internal Server Error');
+    }
+    if (!ini_get('display_errors')) {
+        if (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg') {
+            fwrite(STDERR, 'Composer detected issues in your platform:' . PHP_EOL.PHP_EOL . implode(PHP_EOL, \$issues) . PHP_EOL.PHP_EOL);
+        } elseif (!headers_sent()) {
+            echo 'Composer detected issues in your platform:' . PHP_EOL.PHP_EOL . str_replace('You are running '.PHP_VERSION.'.', '', implode(PHP_EOL, \$issues)) . PHP_EOL.PHP_EOL;
+        }
+    }
+    trigger_error(
+        'Composer detected issues in your platform: ' . implode(' ', \$issues),
+        E_USER_ERROR
+    );
 }
 
 PLATFORM_CHECK;
