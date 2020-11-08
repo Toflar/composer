@@ -210,9 +210,11 @@ class InstallerTest extends TestCase
         $expectOutput = null;
 
         // Disable pool optimizer
-        $composerConfig['config']['pool-optimizer'] = false;
+        putenv('COMPOSER_POOL_OPTIMIZER=0');
 
         $this->doTestIntegration($file, $message, $condition, $composerConfig, $lock, $installed, $run, $expectLock, $expectInstalled, $expectOutput, $expect, $expectResult);
+
+        putenv('COMPOSER_POOL_OPTIMIZER');
     }
 
     private function doTestIntegration($file, $message, $condition, $composerConfig, $lock, $installed, $run, $expectLock, $expectInstalled, $expectOutput, $expect, $expectResult)

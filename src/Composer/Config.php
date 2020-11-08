@@ -66,7 +66,6 @@ class Config
         'use-github-api' => true,
         'lock' => true,
         'platform-check' => 'php-only',
-        'pool-optimizer' => true,
         // valid keys without defaults (auth config stuff):
         // bitbucket-oauth
         // github-oauth
@@ -242,7 +241,6 @@ class Config
             // booleans with env var support
             case 'cache-read-only':
             case 'htaccess-protect':
-            case 'pool-optimizer':
                 // convert foo-bar to COMPOSER_FOO_BAR and check if it exists since it overrides the local config
                 $env = 'COMPOSER_' . strtoupper(strtr($key, '-', '_'));
 
