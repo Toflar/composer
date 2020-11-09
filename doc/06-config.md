@@ -321,9 +321,3 @@ check the presence of extension. If set to `false`, Composer will not create and
 require a `platform_check.php` file as part of the autoloader bootstrap.
 
 &larr; [Repositories](05-repositories.md)  |  [Runtime](07-runtime.md) &rarr;
-
-## pool-optimizer
-
-Defaults to `true`. If set to `false`, Composer will disable the dependency
-resolver's pool optimizer. See the [troubleshooting article](articles/troubleshooting.md#pool-optimizer)
-for more information.
