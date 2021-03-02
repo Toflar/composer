@@ -59,7 +59,6 @@ class PoolOptimizerTest extends TestCase
         );
     }
 
-
     public function getIntegrationTests()
     {
         $fixturesDir = realpath(__DIR__.'/Fixtures/pooloptimizer/');
@@ -75,7 +74,6 @@ class PoolOptimizerTest extends TestCase
                 $requestData = JsonFile::parseJson($testData['REQUEST']);
                 $packagesBefore = $this->loadPackages(JsonFile::parseJson($testData['POOL-BEFORE']));
                 $expectedPackages = $this->loadPackages(JsonFile::parseJson($testData['POOL-AFTER']));
-
             } catch (\Exception $e) {
                 die(sprintf('Test "%s" is not valid: '.$e->getMessage(), str_replace($fixturesDir.'/', '', $file)));
             }
@@ -162,6 +160,7 @@ class PoolOptimizerTest extends TestCase
     private function loadPackage(array $packageData)
     {
         $loader = new ArrayLoader();
+
         return $loader->load($packageData);
     }
 }

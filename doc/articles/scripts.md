@@ -38,7 +38,8 @@ Composer fires the following named events during its execution process:
 - **post-autoload-dump**: occurs after the autoloader has been dumped, either
   during `install`/`update`, or via the `dump-autoload` command.
 - **post-root-package-install**: occurs after the root package has been
-  installed, during the `create-project` command.
+  installed during the `create-project` command (but before its
+  dependencies are installed).
 - **post-create-project-cmd**: occurs after the `create-project` command has
   been executed.
 
@@ -161,10 +162,11 @@ class MyClass
 }
 ```
 
-**Note:** During a composer install or update process, a variable named
+**Note:** During a Composer `install` or `update` command run, a variable named
 `COMPOSER_DEV_MODE` will be added to the environment. If the command was run
 with the `--no-dev` flag, this variable will be set to 0, otherwise it will be
-set to 1.
+set to 1. The variable is also available while `dump-autoload` runs, and it
+will be set to same as the last `install` or `update` was run in.
 
 ## Event classes
 

@@ -188,7 +188,7 @@ class FileDownloaderTest extends TestCase
             ->method('getConfig')
             ->will($this->returnValue($config));
 
-        $expectedUrl      = 'foobar';
+        $expectedUrl = 'foobar';
         $expectedCacheKey = '/'.sha1($expectedUrl).'.';
 
         $dispatcher = new EventDispatcher(
@@ -196,7 +196,7 @@ class FileDownloaderTest extends TestCase
             $this->getMockBuilder('Composer\IO\IOInterface')->getMock(),
             $this->getMockBuilder('Composer\Util\ProcessExecutor')->getMock()
         );
-        $dispatcher->addListener(PluginEvents::PRE_FILE_DOWNLOAD, function ( PreFileDownloadEvent $event ) use ($expectedUrl) {
+        $dispatcher->addListener(PluginEvents::PRE_FILE_DOWNLOAD, function (PreFileDownloadEvent $event) use ($expectedUrl) {
             $event->setProcessedUrl($expectedUrl);
         });
 
@@ -281,8 +281,8 @@ class FileDownloaderTest extends TestCase
             ->method('getConfig')
             ->will($this->returnValue($config));
 
-        $expectedUrl      = 'url';
-        $customCacheKey   = 'xyzzy';
+        $expectedUrl = 'url';
+        $customCacheKey = 'xyzzy';
         $expectedCacheKey = '/'.sha1($customCacheKey).'.';
 
         $dispatcher = new EventDispatcher(
@@ -290,7 +290,7 @@ class FileDownloaderTest extends TestCase
             $this->getMockBuilder('Composer\IO\IOInterface')->getMock(),
             $this->getMockBuilder('Composer\Util\ProcessExecutor')->getMock()
         );
-        $dispatcher->addListener(PluginEvents::PRE_FILE_DOWNLOAD, function ( PreFileDownloadEvent $event ) use ($customCacheKey) {
+        $dispatcher->addListener(PluginEvents::PRE_FILE_DOWNLOAD, function (PreFileDownloadEvent $event) use ($customCacheKey) {
             $event->setCustomCacheKey($customCacheKey);
         });
 
@@ -469,8 +469,8 @@ class FileDownloaderTest extends TestCase
         $path = $this->getUniqueTmpDirectory();
         $filesystem = $this->getMockBuilder('Composer\Util\Filesystem')->getMock();
         $filesystem->expects($this->once())
-            ->method('removeDirectory')
-            ->will($this->returnValue(true));
+            ->method('removeDirectoryAsync')
+            ->will($this->returnValue(\React\Promise\resolve(true)));
 
         $downloader = $this->getDownloader($ioMock, null, null, null, null, $filesystem);
 

@@ -36,6 +36,9 @@ class ProcessExecutor
     protected $errorOutput;
     protected $io;
 
+    /**
+     * @psalm-var array<int, array<string, mixed>>
+     */
     private $jobs = array();
     private $runningJobs = 0;
     private $maxJobs = 10;
@@ -74,7 +77,11 @@ class ProcessExecutor
      */
     public function executeTty($command, $cwd = null)
     {
-        return $this->doExecute($command, $cwd, true);
+        if (Platform::isTty()) {
+            return $this->doExecute($command, $cwd, true);
+        }
+
+        return $this->doExecute($command, $cwd, false);
     }
 
     private function doExecute($command, $cwd, $tty, &$output = null)
@@ -91,10 +98,14 @@ class ProcessExecutor
             $this->io->writeError('Executing command ('.($cwd ?: 'CWD').'): '.$safeCommand);
         }
 
+        // TODO in 2.2, these two checks can be dropped as Symfony 4+ supports them out of the box
         // make sure that null translate to the proper directory in case the dir is a symlink
         // and we call a git command, because msysgit does not handle symlinks properly
         if (null === $cwd && Platform::isWindows() && false !== strpos($command, 'git') && getcwd()) {
             $cwd = realpath(getcwd());
+        }
+        if (null !== $cwd && !is_dir($cwd)) {
+            throw new \RuntimeException('The given CWD for the process does not exist: '.$cwd);
         }
 
         $this->captureOutput = func_num_args() > 3;
@@ -129,11 +140,9 @@ class ProcessExecutor
     /**
      * starts a process on the commandline in async mode
      *
-     * @param  string $command the command to execute
-     * @param  mixed  $output  the output will be written into this var if passed by ref
-     *                         if a callable is passed it will be used as output handler
-     * @param  string $cwd     the working directory
-     * @return int    statuscode
+     * @param  string  $command the command to execute
+     * @param  string  $cwd     the working directory
+     * @return Promise
      */
     public function executeAsync($command, $cwd = null)
     {
@@ -172,6 +181,8 @@ class ProcessExecutor
                 // signal can throw in various conditions, but we don't care if it fails
             }
             $job['process']->stop(1);
+
+            throw new \RuntimeException('Aborted process');
         };
 
         $promise = new Promise($resolver, $canceler);
@@ -193,7 +204,7 @@ class ProcessExecutor
 
             throw $e;
         });
-        $this->jobs[$job['id']] =& $job;
+        $this->jobs[$job['id']] = &$job;
 
         if ($this->runningJobs < $this->maxJobs) {
             $this->startJob($job['id']);
@@ -204,7 +215,7 @@ class ProcessExecutor
 
     private function startJob($id)
     {
-        $job =& $this->jobs[$id];
+        $job = &$this->jobs[$id];
         if ($job['status'] !== self::STATUS_QUEUED) {
             return;
         }
@@ -228,10 +239,14 @@ class ProcessExecutor
             $this->io->writeError('Executing async command ('.($cwd ?: 'CWD').'): '.$safeCommand);
         }
 
+        // TODO in 2.2, these two checks can be dropped as Symfony 4+ supports them out of the box
         // make sure that null translate to the proper directory in case the dir is a symlink
         // and we call a git command, because msysgit does not handle symlinks properly
         if (null === $cwd && Platform::isWindows() && false !== strpos($command, 'git') && getcwd()) {
             $cwd = realpath(getcwd());
+        }
+        if (null !== $cwd && !is_dir($cwd)) {
+            throw new \RuntimeException('The given CWD for the process does not exist: '.$cwd);
         }
 
         // TODO in v3, commands should be passed in as arrays of cmd + args
@@ -311,6 +326,9 @@ class ProcessExecutor
         $this->runningJobs--;
     }
 
+    /**
+     * @return string[]
+     */
     public function splitLines($output)
     {
         $output = trim($output);

@@ -13,7 +13,6 @@
 namespace Composer\Repository;
 
 use Composer\DependencyResolver\PoolOptimizer;
-use Composer\DependencyResolver\PolicyInterface;
 use Composer\DependencyResolver\Pool;
 use Composer\DependencyResolver\PoolBuilder;
 use Composer\DependencyResolver\Request;
@@ -22,12 +21,6 @@ use Composer\IO\IOInterface;
 use Composer\IO\NullIO;
 use Composer\Package\BasePackage;
 use Composer\Package\AliasPackage;
-use Composer\Package\Version\VersionParser;
-use Composer\Repository\CompositeRepository;
-use Composer\Repository\PlatformRepository;
-use Composer\Repository\LockArrayRepository;
-use Composer\Repository\InstalledRepositoryInterface;
-use Composer\Repository\InstalledRepository;
 use Composer\Semver\Constraint\ConstraintInterface;
 use Composer\Package\Version\StabilityFilter;
 
@@ -85,7 +78,7 @@ class RepositorySet
      * aliases, pinned references and other special cases.
      *
      * @param string $minimumStability
-     * @param int[] $stabilityFlags an array of package name => BasePackage::STABILITY_* value
+     * @param int[]  $stabilityFlags   an array of package name => BasePackage::STABILITY_* value
      * @psalm-param array<string, int> $stabilityFlags
      * @param array[] $rootAliases
      * @psalm-param list<array{package: string, version: string, alias: string, alias_normalized: string}> $rootAliases
@@ -128,7 +121,7 @@ class RepositorySet
      * The first repos added have a higher priority. As soon as a package is found in any
      * repository the search for that package ends, and following repos will not be consulted.
      *
-     * @param RepositoryInterface $repo        A package repository
+     * @param RepositoryInterface $repo A package repository
      */
     public function addRepository(RepositoryInterface $repo)
     {
@@ -152,9 +145,9 @@ class RepositorySet
      *
      * Returned in the order of repositories, matching priority
      *
-     * @param string $name
-     * @param ConstraintInterface|null $constraint
-     * @param int $flags any of the ALLOW_* constants from this class to tweak what is returned
+     * @param  string                   $name
+     * @param  ConstraintInterface|null $constraint
+     * @param  int                      $flags      any of the ALLOW_* constants from this class to tweak what is returned
      * @return array
      */
     public function findPackages($name, ConstraintInterface $constraint = null, $flags = 0)
@@ -264,7 +257,6 @@ class RepositorySet
                     $aliasPackage->setRootPackageAlias(true);
                     $packages[] = $aliasPackage;
                 }
-
             }
         }
 

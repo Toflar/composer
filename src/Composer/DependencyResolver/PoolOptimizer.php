@@ -56,7 +56,7 @@ class PoolOptimizer
 
     /**
      * @param Request $request
-     * @param Pool $pool
+     * @param Pool    $pool
      *
      * @return Pool
      */
@@ -140,7 +140,7 @@ class PoolOptimizer
         // Do not use Intervals::compactConstraint() here (it hurts performance)
         $this->irremovablePackageConstraints[$packageName] = new MultiConstraint(array(
             $this->irremovablePackageConstraints[$packageName],
-            $constraint
+            $constraint,
         ), false);
     }
 
@@ -177,13 +177,11 @@ class PoolOptimizer
             $dependencyHash = $this->calculateDependencyHash($package);
 
             foreach ($package->getNames(false) as $packageName) {
-
                 if (!isset($this->requireConstraintsPerPackage[$packageName])) {
                     continue;
                 }
 
                 foreach ($this->requireConstraintsPerPackage[$packageName] as $requireConstraint) {
-
                     $groupHashParts = array();
 
                     if (CompilingMatcher::match($requireConstraint, Constraint::OP_EQ, $package->getVersion())) {
@@ -268,7 +266,7 @@ class PoolOptimizer
             'requires' => $package->getRequires(),
             'conflicts' => $package->getConflicts(),
             'replaces' => $package->getReplaces(),
-            'provides' => $package->getProvides()
+            'provides' => $package->getProvides(),
         );
 
         foreach ($hashRelevantLinks as $key => $links) {

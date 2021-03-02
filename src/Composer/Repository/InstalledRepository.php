@@ -16,10 +16,8 @@ use Composer\Package\Version\VersionParser;
 use Composer\Semver\Constraint\ConstraintInterface;
 use Composer\Semver\Constraint\Constraint;
 use Composer\Semver\Constraint\MatchAllConstraint;
-use Composer\Package\AliasPackage;
 use Composer\Package\RootPackageInterface;
 use Composer\Package\Link;
-
 
 /**
  * Installed repository is a composite of all installed repo types.
@@ -167,6 +165,18 @@ class InstalledRepository extends CompositeRepository
                 }
             }
 
+            // List conflicts against X as they may explain why the current version was selected, or explain why it is rejected if the conflict matched when inverting
+            foreach ($package->getConflicts() as $link) {
+                if (in_array($link->getTarget(), $needles)) {
+                    foreach ($this->findPackages($link->getTarget()) as $pkg) {
+                        $version = new Constraint('=', $pkg->getVersion());
+                        if ($link->getConstraint()->matches($version) === $invert) {
+                            $results[] = array($package, $link, false);
+                        }
+                    }
+                }
+            }
+
             // When inverting, we need to check for conflicts of the needles' requirements against installed packages
             if ($invert && $constraint && in_array($package->getName(), $needles) && $constraint->matches(new Constraint('=', $package->getVersion()))) {
                 foreach ($package->getRequires() as $link) {
@@ -231,7 +241,9 @@ class InstalledRepository extends CompositeRepository
 
     public function getRepoName()
     {
-        return 'installed repo ('.implode(', ', array_map(function ($repo) { return $repo->getRepoName(); }, $this->getRepositories())).')';
+        return 'installed repo ('.implode(', ', array_map(function ($repo) {
+            return $repo->getRepoName();
+        }, $this->getRepositories())).')';
     }
 
     /**

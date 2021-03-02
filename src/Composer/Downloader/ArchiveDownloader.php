@@ -14,8 +14,6 @@ namespace Composer\Downloader;
 
 use Composer\Package\PackageInterface;
 use Symfony\Component\Finder\Finder;
-use Composer\IO\IOInterface;
-use Composer\Exception\IrrecoverableDownloadException;
 use React\Promise\PromiseInterface;
 use Composer\DependencyResolver\Operation\InstallOperation;
 
@@ -28,11 +26,6 @@ use Composer\DependencyResolver\Operation\InstallOperation;
  */
 abstract class ArchiveDownloader extends FileDownloader
 {
-    public function download(PackageInterface $package, $path, PackageInterface $prevPackage = null, $output = true)
-    {
-        return parent::download($package, $path, $prevPackage, $output);
-    }
-
     /**
      * {@inheritDoc}
      * @throws \RuntimeException
@@ -41,9 +34,7 @@ abstract class ArchiveDownloader extends FileDownloader
     public function install(PackageInterface $package, $path, $output = true)
     {
         if ($output) {
-            $this->io->writeError("  - " . InstallOperation::format($package).": Extracting archive");
-        } else {
-            $this->io->writeError('Extracting archive', false);
+            $this->io->writeError("  - " . InstallOperation::format($package) . $this->getInstallOperationAppendix($package, $path));
         }
 
         $vendorDir = $this->config->get('vendor-dir');
@@ -146,9 +137,12 @@ abstract class ArchiveDownloader extends FileDownloader
                 }
             }
 
-            $filesystem->removeDirectory($temporaryDir);
-            $self->removeCleanupPath($package, $temporaryDir);
-            $self->removeCleanupPath($package, $path);
+            $promise = $filesystem->removeDirectoryAsync($temporaryDir);
+
+            return $promise->then(function () use ($self, $package, $path, $temporaryDir) {
+                $self->removeCleanupPath($package, $temporaryDir);
+                $self->removeCleanupPath($package, $path);
+            });
         }, function ($e) use ($cleanup) {
             $cleanup();
 
@@ -157,13 +151,21 @@ abstract class ArchiveDownloader extends FileDownloader
     }
 
     /**
+     * {@inheritDoc}
+     */
+    protected function getInstallOperationAppendix(PackageInterface $package, $path)
+    {
+        return ': Extracting archive';
+    }
+
+    /**
      * Extract file to directory
      *
      * @param string $file Extracted file
      * @param string $path Directory
      *
-     * @return PromiseInterface|null
      * @throws \UnexpectedValueException If can not extract downloaded file to path
+     * @return PromiseInterface|null
      */
     abstract protected function extract(PackageInterface $package, $file, $path);
 }
