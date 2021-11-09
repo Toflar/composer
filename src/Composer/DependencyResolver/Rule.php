@@ -258,7 +258,7 @@ abstract class Rule
                     }
                 }
 
-                return 'Root composer.json requires '.$packageName.($constraint ? ' '.$constraint->getPrettyString() : '').' -> satisfiable by '.$this->formatPackagesUnique($pool, $packages, $isVerbose).'.';
+                return 'Root composer.json requires '.$packageName.($constraint ? ' '.$constraint->getPrettyString() : '').' -> satisfiable by '.$this->formatPackagesUnique($pool, $packages, $isVerbose, $constraint).'.';
 
             case self::RULE_FIXED:
                 $package = $this->deduplicateDefaultBranchAlias($this->reasonData['package']);
@@ -320,7 +320,7 @@ abstract class Rule
 
                 $text = $reasonData->getPrettyString($sourcePackage);
                 if ($requires) {
-                    $text .= ' -> satisfiable by ' . $this->formatPackagesUnique($pool, $requires, $isVerbose) . '.';
+                    $text .= ' -> satisfiable by ' . $this->formatPackagesUnique($pool, $requires, $isVerbose, $this->reasonData->getConstraint()) . '.';
                 } else {
                     $targetName = $reasonData->getTarget();
 
@@ -447,12 +447,16 @@ abstract class Rule
      * @param bool $isVerbose
      * @return string
      */
-    protected function formatPackagesUnique(Pool $pool, array $packages, $isVerbose)
+    protected function formatPackagesUnique(Pool $pool, array $packages, $isVerbose, ConstraintInterface $constraint = null)
     {
         foreach ($packages as $index => $package) {
             if (!\is_object($package)) {
                 $packages[$index] = $pool->literalToPackage($package);
             }
+        }
+
+        if ($constraint) {
+            return Problem::getPackageList($packages, $isVerbose, $pool, $constraint);
         }
 
         return Problem::getPackageList($packages, $isVerbose);

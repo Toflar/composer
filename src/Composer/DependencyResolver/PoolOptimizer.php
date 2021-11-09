@@ -165,13 +165,16 @@ class PoolOptimizer
     private function applyRemovalsToPool(Pool $pool)
     {
         $packages = array();
+        $removedVersions = array();
         foreach ($pool->getPackages() as $package) {
             if (!isset($this->packagesToRemove[$package->id])) {
                 $packages[] = $package;
+            } else {
+                $removedVersions[$package->getName()][$package->getVersion()] = $package->getPrettyVersion();
             }
         }
 
-        $optimizedPool = new Pool($packages, $pool->getUnacceptableFixedOrLockedPackages());
+        $optimizedPool = new Pool($packages, $pool->getUnacceptableFixedOrLockedPackages(), $removedVersions);
 
         // Reset package removals
         $this->packagesToRemove = array();

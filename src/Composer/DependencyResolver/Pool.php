@@ -36,16 +36,36 @@ class Pool implements \Countable
     protected $providerCache = array();
     /** @var BasePackage[] */
     protected $unacceptableFixedOrLockedPackages;
+    /** @var array<string, array<string, string>> Map of package name => normalized version => pretty version */
+    protected $removedVersions = array();
 
     /**
      * @param BasePackage[] $packages
      * @param BasePackage[] $unacceptableFixedOrLockedPackages
+     * @param array<string, array<string, string>> $removedVersions
      */
-    public function __construct(array $packages = array(), array $unacceptableFixedOrLockedPackages = array())
+    public function __construct(array $packages = array(), array $unacceptableFixedOrLockedPackages = array(), array $removedVersions = array())
     {
         $this->versionParser = new VersionParser;
         $this->setPackages($packages);
         $this->unacceptableFixedOrLockedPackages = $unacceptableFixedOrLockedPackages;
+        $this->removedVersions = $removedVersions;
+    }
+
+    public function getRemovedVersions($name, ConstraintInterface $constraint)
+    {
+        if (!isset($this->removedVersions[$name])) {
+            return array();
+        }
+
+        $result = array();
+        foreach ($this->removedVersions[$name] as $version => $prettyVersion) {
+            if ($constraint->matches(new Constraint('==', $version))) {
+                $result[$version] = $prettyVersion;
+            }
+        }
+
+        return $result;
     }
 
     /**
