@@ -21,7 +21,6 @@ use Composer\DependencyResolver\Operation\UpdateOperation;
 use Composer\DependencyResolver\Operation\InstallOperation;
 use Composer\DependencyResolver\Operation\UninstallOperation;
 use Composer\DependencyResolver\PoolOptimizer;
-use Composer\DependencyResolver\PolicyInterface;
 use Composer\DependencyResolver\Pool;
 use Composer\DependencyResolver\Request;
 use Composer\DependencyResolver\Solver;
@@ -1003,7 +1002,7 @@ class Installer
         // Not the best architectural decision here, would need to be able
         // to configure from the outside of Installer but this is only
         // a debugging tool and should never be required in any other use case
-        if ('0' === getenv('COMPOSER_POOL_OPTIMIZER')) {
+        if ('0' === Platform::getEnv('COMPOSER_POOL_OPTIMIZER')) {
             $this->io->write('Pool Optimizer was disabled for debugging purposes.', true, IOInterface::DEBUG);
 
             return null;

@@ -33,20 +33,38 @@ class PoolOptimizer
     private $policy;
 
     /**
-     * @var Request
-     */
-    private $request;
-
-    /**
      * @var Pool
      */
     private $pool;
 
+    /**
+     * @var array<string>
+     */
     private $dependencyHashes = array();
+
+    /**
+     * @var array<string, ConstraintInterface>
+     */
     private $irremovablePackageConstraints = array();
+
+    /**
+     * @var array<int, true>
+     */
     private $irremovablePackages = array();
+
+    /**
+     * @var array<string, array<string, ConstraintInterface>>
+     */
     private $requireConstraintsPerPackage = array();
+
+    /**
+     * @var array<string, array<string, ConstraintInterface>>
+     */
     private $conflictConstraintsPerPackage = array();
+
+    /**
+     * @var array<int, true>
+     */
     private $packagesToRemove = array();
 
     public function __construct(PolicyInterface $policy)
@@ -55,17 +73,13 @@ class PoolOptimizer
     }
 
     /**
-     * @param Request $request
-     * @param Pool $pool
-     *
      * @return Pool
      */
     public function optimize(Request $request, Pool $pool)
     {
-        $this->request = $request;
         $this->pool = $pool;
 
-        $this->prepare();
+        $this->prepare($request);
 
         $this->optimizeByIdenticalDependencies();
 
@@ -81,18 +95,25 @@ class PoolOptimizer
         $this->conflictConstraintsPerPackage = array();
         $this->packagesToRemove = array();
 
-        return $this->pool;
+        $optimizedPool = $this->pool;
+
+        $this->pool = null;
+
+        return $optimizedPool;
     }
 
-    private function prepare()
+    /**
+     * @return void
+     */
+    private function prepare(Request $request)
     {
         // Mark fixed or locked packages as irremovable
-        foreach ($this->request->getFixedOrLockedPackages() as $package) {
+        foreach ($request->getFixedOrLockedPackages() as $package) {
             $this->addIrremovablePackageConstraint($package->getName(), new Constraint('==', $package->getVersion()));
         }
 
         // Extract requested package requirements
-        foreach ($this->request->getRequires() as $require => $constraint) {
+        foreach ($request->getRequires() as $require => $constraint) {
             $constraint = Intervals::compactConstraint($constraint);
             $this->requireConstraintsPerPackage[$require][(string) $constraint] = $constraint;
         }
@@ -129,6 +150,9 @@ class PoolOptimizer
         }
     }
 
+    /**
+     * @return void
+     */
     private function addIrremovablePackageConstraint($packageName, ConstraintInterface $constraint)
     {
         if (!isset($this->irremovablePackageConstraints[$packageName])) {
@@ -144,6 +168,9 @@ class PoolOptimizer
         ), false);
     }
 
+    /**
+     * @return void
+     */
     private function applyRemovalsToPool()
     {
         $packages = array();
@@ -153,12 +180,15 @@ class PoolOptimizer
             }
         }
 
-        $this->pool = new Pool($packages, $this->pool->getUnacceptableFixedPackages());
+        $this->pool = new Pool($packages, $this->pool->getUnacceptableFixedOrLockedPackages());
 
         // Reset package removals
         $this->packagesToRemove = array();
     }
 
+    /**
+     * @return void
+     */
     private function optimizeByIdenticalDependencies()
     {
         $identicalDefinitionPerPackage = array();
@@ -256,6 +286,9 @@ class PoolOptimizer
         $this->applyRemovalsToPool();
     }
 
+    /**
+     * @return string
+     */
     private function calculateDependencyHash(PackageInterface $package)
     {
         if (isset($this->dependencyHashes[$package->id])) {
@@ -296,15 +329,16 @@ class PoolOptimizer
         return $this->dependencyHashes[$package->id] = implode('', $hash);
     }
 
+    /**
+     * @return void
+     */
     private function markPackageForRemoval(PackageInterface $package)
     {
         // We are not allowed to remove packages if they have been marked as irremovable
         if (isset($this->irremovablePackages[$package->id])) {
-            return false;
+            return;
         }
 
         $this->packagesToRemove[$package->id] = true;
-
-        return true;
     }
 }

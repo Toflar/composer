@@ -35,6 +35,7 @@ use Composer\Package\Locker;
 use Composer\Test\Mock\FactoryMock;
 use Composer\Test\Mock\InstalledFilesystemRepositoryMock;
 use Composer\Test\Mock\InstallationManagerMock;
+use Composer\Util\Platform;
 use Symfony\Component\Console\Input\StringInput;
 use Symfony\Component\Console\Output\StreamOutput;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -55,6 +56,8 @@ class InstallerTest extends TestCase
 
     public function tearDown()
     {
+        Platform::clearEnv('COMPOSER_POOL_OPTIMIZER');
+
         chdir($this->prevCwd);
         if (isset($this->tempComposerHome) && is_dir($this->tempComposerHome)) {
             $fs = new Filesystem;
@@ -256,7 +259,7 @@ class InstallerTest extends TestCase
     }
 
     /**
-     * @dataProvider getIntegrationTests
+     * @dataProvider provideIntegrationTests
      */
     public function testIntegrationWithDisabledPoolOptimizer($file, $message, $condition, $composerConfig, $lock, $installed, $run, $expectLock, $expectInstalled, $expectOutput, $expect, $expectResult)
     {
@@ -264,11 +267,9 @@ class InstallerTest extends TestCase
         $expectOutput = null;
 
         // Disable pool optimizer
-        putenv('COMPOSER_POOL_OPTIMIZER=0');
+        Platform::putEnv('COMPOSER_POOL_OPTIMIZER', '0');
 
         $this->doTestIntegration($file, $message, $condition, $composerConfig, $lock, $installed, $run, $expectLock, $expectInstalled, $expectOutput, $expect, $expectResult);
-
-        putenv('COMPOSER_POOL_OPTIMIZER');
     }
 
     private function doTestIntegration($file, $message, $condition, $composerConfig, $lock, $installed, $run, $expectLock, $expectInstalled, $expectOutput, $expect, $expectResult)

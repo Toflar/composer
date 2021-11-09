@@ -221,9 +221,12 @@ class Pool implements \Countable
         return \in_array($package, $this->unacceptableFixedOrLockedPackages, true);
     }
 
-    public function getUnacceptableFixedPackages()
+    /**
+     * @return BasePackage[]
+     */
+    public function getUnacceptableFixedOrLockedPackages()
     {
-        return $this->unacceptableFixedPackages;
+        return $this->unacceptableFixedOrLockedPackages;
     }
 
     public function __toString()
