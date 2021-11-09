@@ -33,11 +33,6 @@ class PoolOptimizer
     private $policy;
 
     /**
-     * @var array<string>
-     */
-    private $dependencyHashes = array();
-
-    /**
      * @var array<string, ConstraintInterface>
      */
     private $irremovablePackageConstraints = array();
@@ -81,7 +76,6 @@ class PoolOptimizer
         // even more gains when ran again. Might change
         // in the future with additional optimizations.
 
-        $this->dependencyHashes = array();
         $this->irremovablePackageConstraints = array();
         $this->irremovablePackages = array();
         $this->requireConstraintsPerPackage = array();
@@ -283,10 +277,6 @@ class PoolOptimizer
      */
     private function calculateDependencyHash(BasePackage $package)
     {
-        if (isset($this->dependencyHashes[$package->id])) {
-            return $this->dependencyHashes[$package->id];
-        }
-
         $hash = '';
 
         $hashRelevantLinks = array(
@@ -318,7 +308,7 @@ class PoolOptimizer
             }
         }
 
-        return $this->dependencyHashes[$package->id] = $hash;
+        return $hash;
     }
 
     /**
