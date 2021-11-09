@@ -264,7 +264,7 @@ class PoolOptimizer
             }
         }
 
-        foreach (array_keys($packageIdsToRemove) as $id) {
+        foreach ($packageIdsToRemove as $id => $dummy) {
             $this->markPackageForRemoval($id);
         }
 
@@ -319,7 +319,7 @@ class PoolOptimizer
     {
         // We are not allowed to remove packages if they have been marked as irremovable
         if (isset($this->irremovablePackages[$id])) {
-            return;
+            throw new \LogicException('Attempted removing a package which was previously marked irremovable');
         }
 
         $this->packagesToRemove[$id] = true;
