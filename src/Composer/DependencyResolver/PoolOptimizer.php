@@ -52,6 +52,11 @@ class PoolOptimizer
      */
     private $packagesToRemove = array();
 
+    /**
+     * @var array<int, BasePackage[]>
+     */
+    private $aliasesPerPackage = array();
+
     public function __construct(PolicyInterface $policy)
     {
         $this->policy = $policy;
@@ -75,6 +80,7 @@ class PoolOptimizer
         $this->requireConstraintsPerPackage = array();
         $this->conflictConstraintsPerPackage = array();
         $this->packagesToRemove = array();
+        $this->aliasesPerPackage = array();
 
         return $optimizedPool;
     }
@@ -110,10 +116,10 @@ class PoolOptimizer
                 $this->conflictConstraintsPerPackage[$link->getTarget()][(string) $constraint] = $constraint;
             }
 
-            // Mark the alias package as well as the aliased package as irremovable (maybe this can be improved?)
+            // Keep track of alias packages for every package so if either the alias or aliased is kept
+            // we keep the others as they are a unit of packages really
             if ($package instanceof AliasPackage) {
-                $irremovablePackageConstraintGroups[$package->getName()][] = new Constraint('==', $package->getVersion());
-                $irremovablePackageConstraintGroups[$package->getAliasOf()->getName()][] = new Constraint('==', $package->getAliasOf()->getVersion());
+                $this->aliasesPerPackage[$package->getAliasOf()->id][] = $package;
             }
         }
 
@@ -130,7 +136,22 @@ class PoolOptimizer
             }
 
             if (CompilingMatcher::match($irremovablePackageConstraints[$package->getName()], Constraint::OP_EQ, $package->getVersion())) {
-                $this->irremovablePackages[$package->id] = true;
+                $this->markPackageIrremovable($package);
+            }
+        }
+    }
+
+    private function markPackageIrremovable(BasePackage $package)
+    {
+        $this->irremovablePackages[$package->id] = true;
+        if ($package instanceof AliasPackage) {
+            // recursing here so aliasesPerPackage for the aliasOf can be checked
+            // and all its aliases marked as irremovable as well
+            $this->markPackageIrremovable($package->getAliasOf());
+        }
+        if (isset($this->aliasesPerPackage[$package->id])) {
+            foreach ($this->aliasesPerPackage[$package->id] as $aliasPackage) {
+                $this->irremovablePackages[$aliasPackage->id] = true;
             }
         }
     }
@@ -222,13 +243,27 @@ class PoolOptimizer
             }
         }
 
+        $keepPackage = function (BasePackage $package, $aliasesPerPackage) use (&$packageIdsToRemove, &$keepPackage) {
+            unset($packageIdsToRemove[$package->id]);
+            if ($package instanceof AliasPackage) {
+                // recursing here so aliasesPerPackage for the aliasOf can be checked
+                // and all its aliases marked to be kept as well
+                $keepPackage($package->getAliasOf(), $aliasesPerPackage);
+            }
+            if (isset($aliasesPerPackage[$package->id])) {
+                foreach ($aliasesPerPackage[$package->id] as $aliasPackage) {
+                    unset($packageIdsToRemove[$aliasPackage->id]);
+                }
+            }
+        };
+
         foreach ($identicalDefinitionPerPackage as $package => $constraintGroups) {
             foreach ($constraintGroups as $constraintGroup) {
                 foreach ($constraintGroup as $hash => $packages) {
 
                     // Only one package in this constraint group has the same requirements, we're not allowed to remove that package
                     if (1 === \count($packages)) {
-                        unset($packageIdsToRemove[$packages[0]->id]);
+                        $keepPackage($packages[0], $this->aliasesPerPackage);
                         continue;
                     }
 
@@ -241,7 +276,7 @@ class PoolOptimizer
                     }
 
                     foreach ($this->policy->selectPreferredPackages($pool, $literals) as $preferredLiteral) {
-                        unset($packageIdsToRemove[$preferredLiteral]);
+                        $keepPackage($pool->literalToPackage($preferredLiteral), $this->aliasesPerPackage);
                     }
                 }
             }
