@@ -287,7 +287,7 @@ class PoolOptimizer
             return $this->dependencyHashes[$package->id];
         }
 
-        $hash = array();
+        $hash = '';
 
         $hashRelevantLinks = array(
             'requires' => $package->getRequires(),
@@ -298,7 +298,7 @@ class PoolOptimizer
 
         foreach ($hashRelevantLinks as $key => $links) {
             // start new hash section
-            $hash[] = $key . ':';
+            $hash .= $key . ':';
 
             $subhash = array();
 
@@ -314,11 +314,11 @@ class PoolOptimizer
             ksort($subhash);
 
             foreach ($subhash as $target => $constraint) {
-                $hash[] = $target . '@' . $constraint;
+                $hash .= $target . '@' . $constraint;
             }
         }
 
-        return $this->dependencyHashes[$package->id] = implode('', $hash);
+        return $this->dependencyHashes[$package->id] = $hash;
     }
 
     /**
