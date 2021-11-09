@@ -33,11 +33,6 @@ class PoolOptimizer
     private $policy;
 
     /**
-     * @var array<string, ConstraintInterface>
-     */
-    private $irremovablePackageConstraints = array();
-
-    /**
      * @var array<int, true>
      */
     private $irremovablePackages = array();
@@ -76,7 +71,6 @@ class PoolOptimizer
         // even more gains when ran again. Might change
         // in the future with additional optimizations.
 
-        $this->irremovablePackageConstraints = array();
         $this->irremovablePackages = array();
         $this->requireConstraintsPerPackage = array();
         $this->conflictConstraintsPerPackage = array();
@@ -90,9 +84,11 @@ class PoolOptimizer
      */
     private function prepare(Request $request, Pool $pool)
     {
+        $irremovablePackageConstraintGroups = array();
+
         // Mark fixed or locked packages as irremovable
         foreach ($request->getFixedOrLockedPackages() as $package) {
-            $this->addIrremovablePackageConstraint($package->getName(), new Constraint('==', $package->getVersion()));
+            $irremovablePackageConstraintGroups[$package->getName()][] = new Constraint('==', $package->getVersion());
         }
 
         // Extract requested package requirements
@@ -102,7 +98,7 @@ class PoolOptimizer
         }
 
         // First pass over all packages to extract information and mark package constraints irremovable
-        foreach ($pool->getPackages() as $i => $package) {
+        foreach ($pool->getPackages() as $package) {
             // Extract package requirements
             foreach ($package->getRequires() as $link) {
                 $constraint = Intervals::compactConstraint($link->getConstraint());
@@ -116,40 +112,27 @@ class PoolOptimizer
 
             // Mark the alias package as well as the aliased package as irremovable (maybe this can be improved?)
             if ($package instanceof AliasPackage) {
-                $this->addIrremovablePackageConstraint($package->getName(), new Constraint('==', $package->getVersion()));
-                $this->addIrremovablePackageConstraint($package->getAliasOf()->getName(), new Constraint('==', $package->getAliasOf()->getVersion()));
+                $irremovablePackageConstraintGroups[$package->getName()][] = new Constraint('==', $package->getVersion());
+                $irremovablePackageConstraintGroups[$package->getAliasOf()->getName()][] = new Constraint('==', $package->getAliasOf()->getVersion());
             }
         }
 
+        $irremovablePackageConstraints = array();
+        foreach ($irremovablePackageConstraintGroups as $packageName => $constraints) {
+            $irremovablePackageConstraints[$packageName] = 1 === \count($constraints) ? $constraints[0] : new MultiConstraint($constraints, false);
+        }
+        unset($irremovablePackageConstraintGroups);
+
         // Mark the packages as irremovable based on the constraints
-        foreach ($pool->getPackages() as $i => $package) {
-            if (!isset($this->irremovablePackageConstraints[$package->getName()])) {
+        foreach ($pool->getPackages() as $package) {
+            if (!isset($irremovablePackageConstraints[$package->getName()])) {
                 continue;
             }
 
-            if (CompilingMatcher::match($this->irremovablePackageConstraints[$package->getName()], Constraint::OP_EQ, $package->getVersion())) {
+            if (CompilingMatcher::match($irremovablePackageConstraints[$package->getName()], Constraint::OP_EQ, $package->getVersion())) {
                 $this->irremovablePackages[$package->id] = true;
             }
         }
-    }
-
-    /**
-     * @param string $packageName
-     * @return void
-     */
-    private function addIrremovablePackageConstraint($packageName, ConstraintInterface $constraint)
-    {
-        if (!isset($this->irremovablePackageConstraints[$packageName])) {
-            $this->irremovablePackageConstraints[$packageName] = $constraint;
-
-            return;
-        }
-
-        // Do not use Intervals::compactConstraint() here (it hurts performance)
-        $this->irremovablePackageConstraints[$packageName] = new MultiConstraint(array(
-            $this->irremovablePackageConstraints[$packageName],
-            $constraint
-        ), false);
     }
 
     /**
@@ -180,7 +163,7 @@ class PoolOptimizer
         $identicalDefinitionPerPackage = array();
         $packageIdsToRemove = array();
 
-        foreach ($pool->getPackages() as $i => $package) {
+        foreach ($pool->getPackages() as $package) {
 
             // If that package was already marked irremovable, we can skip
             // the entire process for it
