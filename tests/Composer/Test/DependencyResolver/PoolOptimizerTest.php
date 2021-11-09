@@ -17,6 +17,7 @@ use Composer\DependencyResolver\Pool;
 use Composer\DependencyResolver\PoolOptimizer;
 use Composer\DependencyResolver\Request;
 use Composer\Json\JsonFile;
+use Composer\Package\BasePackage;
 use Composer\Package\Loader\ArrayLoader;
 use Composer\Package\Version\VersionParser;
 use Composer\Repository\LockArrayRepository;
@@ -25,7 +26,11 @@ use Composer\Test\TestCase;
 class PoolOptimizerTest extends TestCase
 {
     /**
-     * @dataProvider getIntegrationTests
+     * @dataProvider provideIntegrationTests
+     * @param mixed[] $requestData
+     * @param BasePackage[] $packagesBefore
+     * @param BasePackage[] $expectedPackages
+     * @param string $message
      */
     public function testPoolOptimizer(array $requestData, array $packagesBefore, array $expectedPackages, $message)
     {
@@ -59,8 +64,7 @@ class PoolOptimizerTest extends TestCase
         );
     }
 
-
-    public function getIntegrationTests()
+    public function provideIntegrationTests()
     {
         $fixturesDir = realpath(__DIR__.'/Fixtures/pooloptimizer/');
         $tests = array();
@@ -86,10 +90,15 @@ class PoolOptimizerTest extends TestCase
         return $tests;
     }
 
+    /**
+     * @param  string $fixturesDir
+     * @return mixed[]
+     */
     protected function readTestFile(\SplFileInfo $file, $fixturesDir)
     {
         $tokens = preg_split('#(?:^|\n*)--([A-Z-]+)--\n#', file_get_contents($file->getRealPath()), null, PREG_SPLIT_DELIM_CAPTURE);
 
+        /** @var array<string, bool> $sectionInfo */
         $sectionInfo = array(
             'TEST' => true,
             'REQUEST' => true,
@@ -135,6 +144,10 @@ class PoolOptimizerTest extends TestCase
         return $data;
     }
 
+    /**
+     * @param BasePackage[] $packages
+     * @return string[]
+     */
     private function reducePackagesInfoForComparison(array $packages)
     {
         $packagesInfo = array();
@@ -148,6 +161,10 @@ class PoolOptimizerTest extends TestCase
         return $packagesInfo;
     }
 
+    /**
+     * @param mixed[][] $packagesData
+     * @return BasePackage[]
+     */
     private function loadPackages(array $packagesData)
     {
         $packages = array();
@@ -159,6 +176,10 @@ class PoolOptimizerTest extends TestCase
         return $packages;
     }
 
+    /**
+     * @param mixed[] $packageData
+     * @return BasePackage
+     */
     private function loadPackage(array $packageData)
     {
         $loader = new ArrayLoader();

@@ -13,10 +13,10 @@
 namespace Composer\DependencyResolver;
 
 use Composer\Package\AliasPackage;
+use Composer\Package\BasePackage;
 use Composer\Semver\CompilingMatcher;
 use Composer\Semver\Constraint\ConstraintInterface;
 use Composer\Semver\Constraint\Constraint;
-use Composer\Package\PackageInterface;
 use Composer\Semver\Constraint\MultiConstraint;
 use Composer\Semver\Intervals;
 
@@ -31,11 +31,6 @@ class PoolOptimizer
      * @var PolicyInterface
      */
     private $policy;
-
-    /**
-     * @var Pool
-     */
-    private $pool;
 
     /**
      * @var array<string>
@@ -77,11 +72,9 @@ class PoolOptimizer
      */
     public function optimize(Request $request, Pool $pool)
     {
-        $this->pool = $pool;
+        $this->prepare($request, $pool);
 
-        $this->prepare($request);
-
-        $this->optimizeByIdenticalDependencies();
+        $optimizedPool = $this->optimizeByIdenticalDependencies($pool);
 
         // No need to run this recursively at the moment
         // because the current optimizations cannot provide
@@ -95,17 +88,13 @@ class PoolOptimizer
         $this->conflictConstraintsPerPackage = array();
         $this->packagesToRemove = array();
 
-        $optimizedPool = $this->pool;
-
-        $this->pool = null;
-
         return $optimizedPool;
     }
 
     /**
      * @return void
      */
-    private function prepare(Request $request)
+    private function prepare(Request $request, Pool $pool)
     {
         // Mark fixed or locked packages as irremovable
         foreach ($request->getFixedOrLockedPackages() as $package) {
@@ -119,7 +108,7 @@ class PoolOptimizer
         }
 
         // First pass over all packages to extract information and mark package constraints irremovable
-        foreach ($this->pool->getPackages() as $i => $package) {
+        foreach ($pool->getPackages() as $i => $package) {
             // Extract package requirements
             foreach ($package->getRequires() as $link) {
                 $constraint = Intervals::compactConstraint($link->getConstraint());
@@ -139,7 +128,7 @@ class PoolOptimizer
         }
 
         // Mark the packages as irremovable based on the constraints
-        foreach ($this->pool->getPackages() as $i => $package) {
+        foreach ($pool->getPackages() as $i => $package) {
             if (!isset($this->irremovablePackageConstraints[$package->getName()])) {
                 continue;
             }
@@ -151,6 +140,7 @@ class PoolOptimizer
     }
 
     /**
+     * @param string $packageName
      * @return void
      */
     private function addIrremovablePackageConstraint($packageName, ConstraintInterface $constraint)
@@ -169,32 +159,34 @@ class PoolOptimizer
     }
 
     /**
-     * @return void
+     * @return Pool Optimized pool
      */
-    private function applyRemovalsToPool()
+    private function applyRemovalsToPool(Pool $pool)
     {
         $packages = array();
-        foreach ($this->pool->getPackages() as $package) {
+        foreach ($pool->getPackages() as $package) {
             if (!isset($this->packagesToRemove[$package->id])) {
                 $packages[] = $package;
             }
         }
 
-        $this->pool = new Pool($packages, $this->pool->getUnacceptableFixedOrLockedPackages());
+        $optimizedPool = new Pool($packages, $pool->getUnacceptableFixedOrLockedPackages());
 
         // Reset package removals
         $this->packagesToRemove = array();
+
+        return $optimizedPool;
     }
 
     /**
-     * @return void
+     * @return Pool
      */
-    private function optimizeByIdenticalDependencies()
+    private function optimizeByIdenticalDependencies(Pool $pool)
     {
         $identicalDefinitionPerPackage = array();
         $packageIdsToRemove = array();
 
-        foreach ($this->pool->getPackages() as $i => $package) {
+        foreach ($pool->getPackages() as $i => $package) {
 
             // If that package was already marked irremovable, we can skip
             // the entire process for it
@@ -271,7 +263,7 @@ class PoolOptimizer
                         $literals[] = $package->id;
                     }
 
-                    foreach ($this->policy->selectPreferredPackages($this->pool, $literals) as $preferredLiteral) {
+                    foreach ($this->policy->selectPreferredPackages($pool, $literals) as $preferredLiteral) {
                         unset($packageIdsToRemove[$preferredLiteral]);
                     }
                 }
@@ -279,17 +271,17 @@ class PoolOptimizer
         }
 
         foreach (array_keys($packageIdsToRemove) as $id) {
-            $this->markPackageForRemoval($this->pool->packageById($id));
+            $this->markPackageForRemoval($id);
         }
 
         // Apply removals
-        $this->applyRemovalsToPool();
+        return $this->applyRemovalsToPool($pool);
     }
 
     /**
      * @return string
      */
-    private function calculateDependencyHash(PackageInterface $package)
+    private function calculateDependencyHash(BasePackage $package)
     {
         if (isset($this->dependencyHashes[$package->id])) {
             return $this->dependencyHashes[$package->id];
@@ -330,15 +322,16 @@ class PoolOptimizer
     }
 
     /**
+     * @param int $id
      * @return void
      */
-    private function markPackageForRemoval(PackageInterface $package)
+    private function markPackageForRemoval($id)
     {
         // We are not allowed to remove packages if they have been marked as irremovable
-        if (isset($this->irremovablePackages[$package->id])) {
+        if (isset($this->irremovablePackages[$id])) {
             return;
         }
 
-        $this->packagesToRemove[$package->id] = true;
+        $this->packagesToRemove[$id] = true;
     }
 }

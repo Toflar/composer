@@ -260,6 +260,18 @@ class InstallerTest extends TestCase
 
     /**
      * @dataProvider provideIntegrationTests
+     * @param string $file
+     * @param string $message
+     * @param ?string $condition
+     * @param Config $composerConfig
+     * @param ?mixed[] $lock
+     * @param ?mixed[] $installed
+     * @param string $run
+     * @param mixed[]|false $expectLock
+     * @param ?mixed[] $expectInstalled
+     * @param ?string $expectOutput
+     * @param string $expect
+     * @param int|string $expectResult
      */
     public function testIntegrationWithDisabledPoolOptimizer($file, $message, $condition, $composerConfig, $lock, $installed, $run, $expectLock, $expectInstalled, $expectOutput, $expect, $expectResult)
     {
@@ -272,6 +284,21 @@ class InstallerTest extends TestCase
         $this->doTestIntegration($file, $message, $condition, $composerConfig, $lock, $installed, $run, $expectLock, $expectInstalled, $expectOutput, $expect, $expectResult);
     }
 
+    /**
+     * @param string $file
+     * @param string $message
+     * @param ?string $condition
+     * @param Config $composerConfig
+     * @param ?mixed[] $lock
+     * @param ?mixed[] $installed
+     * @param string $run
+     * @param mixed[]|false $expectLock
+     * @param ?mixed[] $expectInstalled
+     * @param ?string $expectOutput
+     * @param string $expect
+     * @param int|string $expectResult
+     * @return void
+     */
     private function doTestIntegration($file, $message, $condition, $composerConfig, $lock, $installed, $run, $expectLock, $expectInstalled, $expectOutput, $expect, $expectResult)
     {
         if ($condition) {

@@ -580,6 +580,9 @@ class PoolBuilder
         }
     }
 
+    /**
+     * @return Pool
+     */
     private function runOptimizer(Request $request, Pool $pool)
     {
         if (null === $this->poolOptimizer) {
@@ -596,7 +599,8 @@ class PoolBuilder
             return $pool;
         }
 
-        $this->io->write(sprintf('<info>Pool builder found a total of %s package versions referenced in your dependency tree. The optimizer was able to filter out %s (%d%%) of them early!</info>',
+        $this->io->write(sprintf(
+            '<info>Found %s package versions referenced in your dependency graph. %s (%d%%) were optimized away.</info>',
             number_format($total),
             number_format($filtered),
             round(100/$total*$filtered)
