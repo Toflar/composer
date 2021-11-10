@@ -17,6 +17,7 @@ use Composer\DependencyResolver\Pool;
 use Composer\DependencyResolver\PoolOptimizer;
 use Composer\DependencyResolver\Request;
 use Composer\Json\JsonFile;
+use Composer\Package\AliasPackage;
 use Composer\Package\BasePackage;
 use Composer\Package\Loader\ArrayLoader;
 use Composer\Package\Version\VersionParser;
@@ -36,14 +37,19 @@ class PoolOptimizerTest extends TestCase
     {
         $lockedRepo = new LockArrayRepository();
 
-        // TODO: test with locked repo
-        if (isset($requestData['locked'])) {
-            foreach ($requestData['locked'] as $package) {
-                $lockedRepo->addPackage($this->loadPackage($package));
-            }
-        }
         $request = new Request($lockedRepo);
         $parser = new VersionParser();
+
+        if (isset($requestData['locked'])) {
+            foreach ($requestData['locked'] as $package) {
+                $request->lockPackage($this->loadPackage($package));
+            }
+        }
+        if (isset($requestData['fixed'])) {
+            foreach ($requestData['fixed'] as $package) {
+                $request->fixPackage($this->loadPackage($package));
+            }
+        }
 
         foreach ($requestData['require'] as $package => $constraint) {
             $request->requireName($package, $parser->parseConstraints($constraint));
@@ -153,7 +159,7 @@ class PoolOptimizerTest extends TestCase
         $packagesInfo = array();
 
         foreach ($packages as $package) {
-            $packagesInfo[] = $package->getName() . '@' . $package->getVersion();
+            $packagesInfo[] = $package->getName() . '@' . $package->getVersion() . ($package instanceof AliasPackage ? ' (alias of '.$package->getAliasOf()->getVersion().')' : '');
         }
 
         sort($packagesInfo);
@@ -170,7 +176,10 @@ class PoolOptimizerTest extends TestCase
         $packages = array();
 
         foreach ($packagesData as $packageData) {
-            $packages[] = $this->loadPackage($packageData);
+            $packages[] = $package = $this->loadPackage($packageData);
+            if ($package instanceof AliasPackage) {
+                $packages[] = $package->getAliasOf();
+            }
         }
 
         return $packages;

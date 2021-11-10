@@ -230,6 +230,7 @@ class InstallerTest extends TestCase
      * @param mixed[]|false $expectLock
      * @param ?mixed[] $expectInstalled
      * @param ?string $expectOutput
+     * @param ?string $expectOutputOptimized
      * @param string $expect
      * @param int|string $expectResult
      */
