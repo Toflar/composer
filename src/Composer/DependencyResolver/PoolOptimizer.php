@@ -301,6 +301,10 @@ class PoolOptimizer
         );
 
         foreach ($hashRelevantLinks as $key => $links) {
+            if (0 === \count($links)) {
+                continue;
+            }
+
             // start new hash section
             $hash .= $key . ':';
 
