@@ -14,6 +14,7 @@ namespace Composer\DependencyResolver;
 
 use Composer\Package\AliasPackage;
 use Composer\Package\BasePackage;
+use Composer\Package\Version\VersionParser;
 use Composer\Semver\CompilingMatcher;
 use Composer\Semver\Constraint\ConstraintInterface;
 use Composer\Semver\Constraint\Constraint;
@@ -160,9 +161,10 @@ class PoolOptimizer
     }
 
     /**
+     * @param array<string, array<string, string>> $removedVersionsByPackage
      * @return Pool Optimized pool
      */
-    private function applyRemovalsToPool(Pool $pool)
+    private function applyRemovalsToPool(Pool $pool, $removedVersionsByPackage)
     {
         $packages = array();
         $removedVersions = array();
@@ -174,7 +176,7 @@ class PoolOptimizer
             }
         }
 
-        $optimizedPool = new Pool($packages, $pool->getUnacceptableFixedOrLockedPackages(), $removedVersions);
+        $optimizedPool = new Pool($packages, $pool->getUnacceptableFixedOrLockedPackages(), $removedVersions, $removedVersionsByPackage);
 
         // Reset package removals
         $this->packagesToRemove = array();
@@ -189,6 +191,8 @@ class PoolOptimizer
     {
         $identicalDefinitionPerPackage = array();
         $packageIdsToRemove = array();
+
+        $packageGroupLookup = array();
 
         foreach ($pool->getPackages() as $package) {
 
@@ -237,21 +241,54 @@ class PoolOptimizer
                         continue;
                     }
 
-                    $identicalDefinitionPerPackage[$packageName][implode('', $groupHashParts)][$dependencyHash][] = $package;
+                    $groupHash = implode('', $groupHashParts);
+                    $identicalDefinitionPerPackage[$packageName][$groupHash][$dependencyHash][] = $package;
+                    $packageGroupLookup[$package->id][$packageName] = array('groupHash' => $groupHash, 'dependencyHash' => $dependencyHash);
                 }
             }
         }
 
-        $keepPackage = function (BasePackage $package, $aliasesPerPackage) use (&$packageIdsToRemove, &$keepPackage) {
+        $removedVersionsByPackage = array();
+        $keepPackage = function (BasePackage $package, $aliasesPerPackage) use (&$packageIdsToRemove, &$keepPackage, &$removedVersionsByPackage, $packageGroupLookup, $identicalDefinitionPerPackage) {
             unset($packageIdsToRemove[$package->id]);
+
             if ($package instanceof AliasPackage) {
                 // recursing here so aliasesPerPackage for the aliasOf can be checked
                 // and all its aliases marked to be kept as well
                 $keepPackage($package->getAliasOf(), $aliasesPerPackage);
             }
+
+            // record all the versions of the package group so we can list them later in Problem output
+            foreach ($package->getNames(false) as $name) {
+                if (isset($packageGroupLookup[$package->id][$name])) {
+                    $packageGroupPointers = $packageGroupLookup[$package->id][$name];
+                    $packageGroup = $identicalDefinitionPerPackage[$name][$packageGroupPointers['groupHash']][$packageGroupPointers['dependencyHash']];
+                    foreach ($packageGroup as $pkg) {
+                        if ($pkg instanceof AliasPackage && $pkg->getPrettyVersion() === VersionParser::DEFAULT_BRANCH_ALIAS) {
+                            $pkg = $pkg->getAliasOf();
+                        }
+                        $removedVersionsByPackage[spl_object_hash($package)][$pkg->getVersion()] = $pkg->getPrettyVersion();
+                    }
+                }
+            }
+
             if (isset($aliasesPerPackage[$package->id])) {
                 foreach ($aliasesPerPackage[$package->id] as $aliasPackage) {
                     unset($packageIdsToRemove[$aliasPackage->id]);
+
+                    // record all the versions of the package group so we can list them later in Problem output
+                    foreach ($aliasPackage->getNames(false) as $name) {
+                        if (isset($packageGroupLookup[$aliasPackage->id][$name])) {
+                            $packageGroupPointers = $packageGroupLookup[$aliasPackage->id][$name];
+                            $packageGroup = $identicalDefinitionPerPackage[$name][$packageGroupPointers['groupHash']][$packageGroupPointers['dependencyHash']];
+                            foreach ($packageGroup as $pkg) {
+                                if ($pkg instanceof AliasPackage && $pkg->getPrettyVersion() === VersionParser::DEFAULT_BRANCH_ALIAS) {
+                                    $pkg = $pkg->getAliasOf();
+                                }
+                                $removedVersionsByPackage[spl_object_hash($aliasPackage)][$pkg->getVersion()] = $pkg->getPrettyVersion();
+                            }
+                        }
+                    }
                 }
             }
         };
@@ -286,7 +323,7 @@ class PoolOptimizer
         }
 
         // Apply removals
-        return $this->applyRemovalsToPool($pool);
+        return $this->applyRemovalsToPool($pool, $removedVersionsByPackage);
     }
 
     /**

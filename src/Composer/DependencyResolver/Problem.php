@@ -126,6 +126,10 @@ class Problem
                 $template = preg_replace('{^\S+ \S+ }', '%s%s ', $message);
                 $messages[] = $template;
                 $templates[$template][$m[1]][$parser->normalize($m[2])] = $m[2];
+                $sourcePackage = $rule->getSourcePackage($pool);
+                foreach ($pool->getRemovedVersionsByPackage(spl_object_hash($sourcePackage)) as $version => $prettyVersion) {
+                    $templates[$template][$m[1]][$version] = $prettyVersion;
+                }
             } elseif ($message !== '') {
                 $messages[] = $message;
             }
@@ -356,9 +360,10 @@ class Problem
      * @internal
      * @param PackageInterface[] $packages
      * @param bool $isVerbose
+     * @param bool $useRemovedVersionGroup
      * @return string
      */
-    public static function getPackageList(array $packages, $isVerbose, Pool $pool = null, ConstraintInterface $constraint = null)
+    public static function getPackageList(array $packages, $isVerbose, Pool $pool = null, ConstraintInterface $constraint = null, $useRemovedVersionGroup = false)
     {
         $prepared = array();
         $hasDefaultBranch = array();
@@ -367,6 +372,11 @@ class Problem
             $prepared[$package->getName()]['versions'][$package->getVersion()] = $package->getPrettyVersion().($package instanceof AliasPackage ? ' (alias of '.$package->getAliasOf()->getPrettyVersion().')' : '');
             if ($pool && $constraint) {
                 foreach ($pool->getRemovedVersions($package->getName(), $constraint) as $version => $prettyVersion) {
+                    $prepared[$package->getName()]['versions'][$version] = $prettyVersion;
+                }
+            }
+            if ($pool && $useRemovedVersionGroup) {
+                foreach ($pool->getRemovedVersionsByPackage(spl_object_hash($package)) as $version => $prettyVersion) {
                     $prepared[$package->getName()]['versions'][$version] = $prettyVersion;
                 }
             }
