@@ -225,7 +225,7 @@ class PoolOptimizer
                     if (isset($this->conflictConstraintsPerPackage[$packageName])) {
                         foreach ($this->conflictConstraintsPerPackage[$packageName] as $conflictConstraint) {
                             if (CompilingMatcher::match($conflictConstraint, Constraint::OP_EQ, $package->getVersion())) {
-                                $groupHashParts[] = 'conflict:' . (string) $requireConstraint;
+                                $groupHashParts[] = 'conflict:' . (string) $conflictConstraint;
                             }
                         }
                     }

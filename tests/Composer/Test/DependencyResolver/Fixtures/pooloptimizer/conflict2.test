@@ -23,14 +23,14 @@ from the pool which might end up being part of the solution.
             "name": "conflicter/pkg",
             "version": "1.0.1",
             "conflict": {
-                "victim/pkg": "1.1.0 || 1.1.1"
+                "victim/pkg": "1.1.0"
             }
         },
         {
             "name": "conflicter/pkg",
             "version": "1.0.2",
             "conflict": {
-                "victim/pkg": "1.1.1 || 1.1.2"
+                "victim/pkg": "1.1.2"
             }
         },
         {
@@ -87,10 +87,6 @@ from the pool which might end up being part of the solution.
             "conflict": {
                 "victim/pkg": "1.1.2"
             }
-        },
-        {
-            "name": "victim/pkg",
-            "version": "1.0.2"
         },
         {
             "name": "victim/pkg",
