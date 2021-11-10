@@ -215,13 +215,6 @@ class PoolOptimizer
 
                     if ($package->getReplaces()) {
                         foreach ($package->getReplaces() as $link) {
-                            // Make sure we do not replace ourselves (if someone made a mistake and tagged it)
-                            // See e.g. https://github.com/BabDev/Pagerfanta/commit/fd00eb74632fecc0265327e9fe0eddc08c72b238#diff-b5d0ee8c97c7abd7e3fa29b9a27d1780
-                            // TODO: should that go into package itself?
-                            if ($package->getName() === $link->getTarget()) {
-                                continue;
-                            }
-
                             if (CompilingMatcher::match($link->getConstraint(), Constraint::OP_EQ, $package->getVersion())) {
                                 // Use the same hash part as the regular require hash because that's what the replacement does
                                 $groupHashParts[] = 'require:' . (string) $link->getConstraint();

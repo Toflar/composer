@@ -238,7 +238,7 @@ class InstallerTest extends TestCase
     {
         Platform::putEnv('COMPOSER_POOL_OPTIMIZER', '0');
 
-        return $this->doTestIntegration($file, $message, $condition, $composerConfig, $lock, $installed, $run, $expectLock, $expectInstalled, $expectOutput, $expect, $expectResult);
+        $this->doTestIntegration($file, $message, $condition, $composerConfig, $lock, $installed, $run, $expectLock, $expectInstalled, $expectOutput, $expect, $expectResult);
     }
 
     /**
