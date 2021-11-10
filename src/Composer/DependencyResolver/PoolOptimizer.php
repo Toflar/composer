@@ -141,6 +141,9 @@ class PoolOptimizer
         }
     }
 
+    /**
+     * @return void
+     */
     private function markPackageIrremovable(BasePackage $package)
     {
         $this->irremovablePackages[$package->id] = true;

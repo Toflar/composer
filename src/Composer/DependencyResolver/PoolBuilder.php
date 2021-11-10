@@ -604,7 +604,7 @@ class PoolBuilder
             number_format($total),
             number_format($filtered),
             round(100/$total*$filtered)
-        ), true, IOInterface::DEBUG);
+        ), true, IOInterface::VERY_VERBOSE);
 
         return $pool;
     }

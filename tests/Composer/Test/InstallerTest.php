@@ -233,9 +233,11 @@ class InstallerTest extends TestCase
      * @param string $expect
      * @param int|string $expectResult
      */
-    public function testSlowIntegration($file, $message, $condition, $composerConfig, $lock, $installed, $run, $expectLock, $expectInstalled, $expectOutput, $expect, $expectResult)
+    public function testSlowIntegration($file, $message, $condition, $composerConfig, $lock, $installed, $run, $expectLock, $expectInstalled, $expectOutput, $expectOutputOptimized, $expect, $expectResult)
     {
-        return $this->testIntegration($file, $message, $condition, $composerConfig, $lock, $installed, $run, $expectLock, $expectInstalled, $expectOutput, $expect, $expectResult);
+        Platform::putEnv('COMPOSER_POOL_OPTIMIZER', '0');
+
+        return $this->doTestIntegration($file, $message, $condition, $composerConfig, $lock, $installed, $run, $expectLock, $expectInstalled, $expectOutput, $expect, $expectResult);
     }
 
     /**
@@ -250,12 +252,15 @@ class InstallerTest extends TestCase
      * @param mixed[]|false $expectLock
      * @param ?mixed[] $expectInstalled
      * @param ?string $expectOutput
+     * @param ?string $expectOutputOptimized
      * @param string $expect
      * @param int|string $expectResult
      */
-    public function testIntegration($file, $message, $condition, $composerConfig, $lock, $installed, $run, $expectLock, $expectInstalled, $expectOutput, $expect, $expectResult)
+    public function testIntegrationWithPoolOptimizer($file, $message, $condition, $composerConfig, $lock, $installed, $run, $expectLock, $expectInstalled, $expectOutput, $expectOutputOptimized, $expect, $expectResult)
     {
-        $this->doTestIntegration($file, $message, $condition, $composerConfig, $lock, $installed, $run, $expectLock, $expectInstalled, $expectOutput, $expect, $expectResult);
+        Platform::putEnv('COMPOSER_POOL_OPTIMIZER', '1');
+
+        $this->doTestIntegration($file, $message, $condition, $composerConfig, $lock, $installed, $run, $expectLock, $expectInstalled, $expectOutputOptimized ?: $expectOutput, $expect, $expectResult);
     }
 
     /**
@@ -270,15 +275,12 @@ class InstallerTest extends TestCase
      * @param mixed[]|false $expectLock
      * @param ?mixed[] $expectInstalled
      * @param ?string $expectOutput
+     * @param ?string $expectOutputOptimized
      * @param string $expect
      * @param int|string $expectResult
      */
-    public function testIntegrationWithDisabledPoolOptimizer($file, $message, $condition, $composerConfig, $lock, $installed, $run, $expectLock, $expectInstalled, $expectOutput, $expect, $expectResult)
+    public function testIntegrationWithRawPool($file, $message, $condition, $composerConfig, $lock, $installed, $run, $expectLock, $expectInstalled, $expectOutput, $expectOutputOptimized, $expect, $expectResult)
     {
-        // Disable output comparison
-        $expectOutput = null;
-
-        // Disable pool optimizer
         Platform::putEnv('COMPOSER_POOL_OPTIMIZER', '0');
 
         $this->doTestIntegration($file, $message, $condition, $composerConfig, $lock, $installed, $run, $expectLock, $expectInstalled, $expectOutput, $expect, $expectResult);
@@ -566,6 +568,7 @@ class InstallerTest extends TestCase
                     $expectInstalled = JsonFile::parseJson($testData['EXPECT-INSTALLED']);
                 }
                 $expectOutput = isset($testData['EXPECT-OUTPUT']) ? $testData['EXPECT-OUTPUT'] : null;
+                $expectOutputOptimized = isset($testData['EXPECT-OUTPUT-OPTIMIZED']) ? $testData['EXPECT-OUTPUT-OPTIMIZED'] : null;
                 $expect = $testData['EXPECT'];
                 if (!empty($testData['EXPECT-EXCEPTION'])) {
                     $expectResult = $testData['EXPECT-EXCEPTION'];
@@ -581,7 +584,7 @@ class InstallerTest extends TestCase
                 die(sprintf('Test "%s" is not valid: '.$e->getMessage(), str_replace($fixturesDir.'/', '', $file)));
             }
 
-            $tests[basename($file)] = array(str_replace($fixturesDir.'/', '', $file), $message, $condition, $composer, $lock, $installed, $run, $expectLock, $expectInstalled, $expectOutput, $expect, $expectResult);
+            $tests[basename($file)] = array(str_replace($fixturesDir.'/', '', $file), $message, $condition, $composer, $lock, $installed, $run, $expectLock, $expectInstalled, $expectOutput, $expectOutputOptimized, $expect, $expectResult);
         }
 
         return $tests;
@@ -605,6 +608,7 @@ class InstallerTest extends TestCase
             'EXPECT-LOCK' => false,
             'EXPECT-INSTALLED' => false,
             'EXPECT-OUTPUT' => false,
+            'EXPECT-OUTPUT-OPTIMIZED' => false,
             'EXPECT-EXIT-CODE' => false,
             'EXPECT-EXCEPTION' => false,
             'EXPECT' => true,
