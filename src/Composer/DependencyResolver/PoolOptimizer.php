@@ -194,21 +194,20 @@ class PoolOptimizer
 
             $dependencyHash = $this->calculateDependencyHash($package);
 
+            $replaceHashParts = [];
+            foreach ($package->getReplaces() as $link) {
+                if (CompilingMatcher::match($link->getConstraint(), Constraint::OP_EQ, $package->getVersion())) {
+                    // Use the same hash part as the regular require hash because that's what the replacement does
+                    $replaceHashParts[] = 'require:' . (string) $link->getConstraint();
+                }
+            }
+
             foreach ($package->getNames(false) as $packageName) {
                 if (!isset($this->requireConstraintsPerPackage[$packageName])) {
                     continue;
                 }
 
-                $invariantHashParts = [];
-                if (\count($package->getReplaces()) > 0) {
-                    foreach ($package->getReplaces() as $link) {
-                        if (CompilingMatcher::match($link->getConstraint(), Constraint::OP_EQ, $package->getVersion())) {
-                            // Use the same hash part as the regular require hash because that's what the replacement does
-                            $invariantHashParts[] = 'require:' . (string) $link->getConstraint();
-                        }
-                    }
-                }
-
+                $invariantHashParts = $replaceHashParts;
                 if (isset($this->conflictConstraintsPerPackage[$packageName])) {
                     foreach ($this->conflictConstraintsPerPackage[$packageName] as $conflictConstraint) {
                         if (CompilingMatcher::match($conflictConstraint, Constraint::OP_EQ, $package->getVersion())) {
