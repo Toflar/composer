@@ -217,15 +217,17 @@ class PoolOptimizer
                 }
 
                 $invariantHash = implode('', $invariantHashParts);
+                $addedToInvariantGroup = false;
                 foreach ($this->requireConstraintsPerPackage[$packageName] as $requireConstraint) {
                     if (CompilingMatcher::match($requireConstraint, Constraint::OP_EQ, $package->getVersion())) {
                         $groupHash = 'require:' . (string) $requireConstraint . $invariantHash;
                     } else {
+                        // Every non-matching constraint yields the same hash, only add the package to it once
+                        if ($addedToInvariantGroup || '' === $invariantHash) {
+                            continue;
+                        }
+                        $addedToInvariantGroup = true;
                         $groupHash = $invariantHash;
-                    }
-
-                    if ('' === $groupHash) {
-                        continue;
                     }
 
                     $identicalDefinitionsPerPackage[$packageName][$groupHash][$dependencyHash][] = $package->id;
