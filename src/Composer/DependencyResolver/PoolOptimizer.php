@@ -216,18 +216,18 @@ class PoolOptimizer
                     }
                 }
 
+                $invariantHash = implode('', $invariantHashParts);
                 foreach ($this->requireConstraintsPerPackage[$packageName] as $requireConstraint) {
-                    $groupHashParts = $invariantHashParts;
-
                     if (CompilingMatcher::match($requireConstraint, Constraint::OP_EQ, $package->getVersion())) {
-                        array_unshift($groupHashParts, 'require:' . (string) $requireConstraint);
+                        $groupHash = 'require:' . (string) $requireConstraint . $invariantHash;
+                    } else {
+                        $groupHash = $invariantHash;
                     }
 
-                    if (0 === \count($groupHashParts)) {
+                    if ('' === $groupHash) {
                         continue;
                     }
 
-                    $groupHash = implode('', $groupHashParts);
                     $identicalDefinitionsPerPackage[$packageName][$groupHash][$dependencyHash][] = $package->id;
                 }
             }
